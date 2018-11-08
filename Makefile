@@ -73,3 +73,9 @@ clean-pyc:
 
 .PHONY: clean
 clean: clean-pyc clean-protos
+
+# docker:
+
+.PHONY: docker
+docker:
+	docker build -t hathor:$(t) .
