@@ -1,27 +1,19 @@
+# essential runtime deps
+
 base58==1.0.0
-Twisted==18.7.0
+twisted==18.7.0
 autobahn==18.8.1
-intervaltree
-
+intervaltree==2.1.0
+# https://github.com/earonesty/cryptography/archive/compressed-point-support.zip#egg=cryptography
+# cryptography==2.5.0
 https://github.com/pyca/cryptography/archive/master.zip#egg=cryptography >= 2.5.dev1
-
-pyOpenSSL==18.0.0
-service-identity
-
+pyopenssl==18.0.0
+service-identity==17.0.0
 mnemonic==0.18
-https://github.com/richardkiss/pycoin/archive/master.zip#egg=pycoin
-
+https://github.com/richardkiss/pycoin/archive/master.zip#egg=pycoin >= 0.90a0
 graphviz==0.9
 prometheus-client==0.4.2
-
-requests
-colorama
-ipython
-
-flake8
-pytest
-pytest-cov
-
+requests==2.21.0
+colorama==0.4.0
+# should follow grpcio-tools on build-requirements
 grpcio==1.16.0
-grpcio-tools==1.16.0
-mypy-protobuf==1.8
