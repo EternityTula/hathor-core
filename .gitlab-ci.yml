@@ -1,33 +1,47 @@
 # Documentation: https://docs.gitlab.com/ce/ci/yaml/README.html
 
 stages:
-  - linters
-  - unit-tests
+  - update
+  - build
+  - test
 
-check:
-  stage: linters
-  image: python:3.6
+image: python:3.6
+
+before_script:
+  - apt-get install -qy graphviz
+
+update apt:
+  stage: update
+  only:
+    - dev
+    - merge_requests
+  before_script:
+    - apt-get update -qy
+
+build protos:
+  stage: build
+  only:
+    - dev
+    - merge_requests
+  script:
+    - pip install pipenv
+    - pipenv install -d --system --deploy
+    - make protos
+
+code lint:
+  stage: test
   allow_failure: yes
   only:
     - dev
-    - web
-  before_script:
-    - pip install flake8 isort mypy
+    - merge_requests
   script:
     - make check
 
-unit-tests:
-  stage: unit-tests
-  image: python:3.6
+unit tests:
+  stage: test
   only:
     - dev
     - web
-  before_script:
-    - apt update
-    - apt install -y graphviz
-    - pip install pipenv
-    - pipenv sync -d
-    - pipenv run make protos
   script:
-    - pipenv run make tests
+    - make tests
   coverage: '/^TOTAL.*\s+(\d+\%)$/'
