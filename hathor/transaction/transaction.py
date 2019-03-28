@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple
 from twisted.logger import Logger
 
 from hathor import protos
-from hathor.constants import HATHOR_TOKEN_UID
+from hathor.conf import HathorSettings
 from hathor.transaction import MAX_NUM_INPUTS, MAX_NUM_OUTPUTS, BaseTransaction, TxInput, TxOutput, sum_weights
 from hathor.transaction.exceptions import (
     ConflictingInputs,
@@ -22,6 +22,8 @@ from hathor.transaction.util import unpack
 
 if TYPE_CHECKING:
     from hathor.transaction.storage import TransactionStorage  # noqa: F401
+
+settings = HathorSettings()
 
 TokenInfo = namedtuple('TokenInfo', 'amount can_mint can_melt')
 
@@ -235,7 +237,7 @@ class Transaction(BaseTransaction):
             if token_info.amount == 0:
                 # that's the usual behavior, nothing to do
                 pass
-            elif token_uid == HATHOR_TOKEN_UID:
+            elif token_uid == settings.HATHOR_TOKEN_UID:
                 raise InputOutputMismatch('Sum of inputs is different than the sum of outputs (difference: {})'.format(
                     token_info.amount))
             elif token_info.amount > 0:
@@ -297,10 +299,6 @@ class Transaction(BaseTransaction):
             script_eval(self, input_tx, spent_tx)
         except ScriptError as e:
             raise InvalidInputData(e) from e
-
-    def get_spent_tx(self, input_tx: TxInput) -> BaseTransaction:
-        assert self.storage is not None
-        return self.storage.get_transaction(input_tx.tx_id)
 
     def update_voided_info(self) -> None:
         """ This method should be called only once when the transactions is added to the DAG.

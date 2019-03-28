@@ -6,7 +6,7 @@ import unittest
 
 from twisted.internet.task import Clock
 
-from hathor.constants import STORAGE_SUBFOLDERS
+from hathor.conf import HathorSettings
 from hathor.manager import TestMode
 from hathor.transaction import Block, Transaction, TxInput, TxOutput
 from hathor.transaction.storage import (
@@ -14,11 +14,14 @@ from hathor.transaction.storage import (
     TransactionCacheStorage,
     TransactionCompactStorage,
     TransactionMemoryStorage,
+    TransactionRocksDBStorage,
     TransactionSubprocessStorage,
 )
 from hathor.transaction.storage.exceptions import TransactionDoesNotExist
 from hathor.wallet import Wallet
 from tests.utils import add_new_blocks, add_new_transactions, start_remote_storage
+
+settings = HathorSettings()
 
 
 class _BaseTransactionStorageTest:
@@ -266,7 +269,7 @@ class _BaseTransactionStorageTest:
 
 class TransactionBinaryStorageTest(_BaseTransactionStorageTest._TransactionStorageTest):
     def setUp(self):
-        self.directory = tempfile.mkdtemp(dir='/tmp/')
+        self.directory = tempfile.mkdtemp()
         super().setUp(TransactionBinaryStorage(self.directory))
 
     def tearDown(self):
@@ -276,7 +279,7 @@ class TransactionBinaryStorageTest(_BaseTransactionStorageTest._TransactionStora
 
 class TransactionCompactStorageTest(_BaseTransactionStorageTest._TransactionStorageTest):
     def setUp(self):
-        self.directory = tempfile.mkdtemp(dir='/tmp/')
+        self.directory = tempfile.mkdtemp()
         # Creating random file just to test specific part of code
         tempfile.NamedTemporaryFile(dir=self.directory, delete=True)
         super().setUp(TransactionCompactStorage(self.directory))
@@ -284,7 +287,7 @@ class TransactionCompactStorageTest(_BaseTransactionStorageTest._TransactionStor
     def test_subfolders(self):
         # test we have the subfolders under the main tx folder
         subfolders = os.listdir(self.directory)
-        self.assertEqual(STORAGE_SUBFOLDERS, len(subfolders))
+        self.assertEqual(settings.STORAGE_SUBFOLDERS, len(subfolders))
 
     def tearDown(self):
         shutil.rmtree(self.directory)
@@ -293,7 +296,7 @@ class TransactionCompactStorageTest(_BaseTransactionStorageTest._TransactionStor
 
 class CacheBinaryStorageTest(_BaseTransactionStorageTest._TransactionStorageTest):
     def setUp(self):
-        self.directory = tempfile.mkdtemp(dir='/tmp/')
+        self.directory = tempfile.mkdtemp()
         store = TransactionBinaryStorage(self.directory)
         reactor = Clock()
         super().setUp(TransactionCacheStorage(store, reactor, capacity=5))
@@ -305,7 +308,7 @@ class CacheBinaryStorageTest(_BaseTransactionStorageTest._TransactionStorageTest
 
 class CacheCompactStorageTest(_BaseTransactionStorageTest._TransactionStorageTest):
     def setUp(self):
-        self.directory = tempfile.mkdtemp(dir='/tmp/')
+        self.directory = tempfile.mkdtemp()
         # Creating random file just to test specific part of code
         tempfile.NamedTemporaryFile(dir=self.directory, delete=True)
         store = TransactionCompactStorage(self.directory)
@@ -352,6 +355,16 @@ class RemoteCacheMemoryStorageTest(_BaseTransactionStorageTest._RemoteStorageTes
         store = TransactionMemoryStorage()
         reactor = Clock()
         super().setUp(TransactionCacheStorage(store, reactor, capacity=5))
+
+
+class TransactionRocksDBStorageTest(_BaseTransactionStorageTest._TransactionStorageTest):
+    def setUp(self):
+        self.directory = tempfile.mkdtemp()
+        super().setUp(TransactionRocksDBStorage(self.directory))
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)
+        super().tearDown()
 
 
 if __name__ == '__main__':

@@ -1,12 +1,15 @@
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import CancelledError, inlineCallbacks
+from twisted.python.failure import Failure
 
-from hathor.constants import DECIMAL_PLACES, HATHOR_TOKEN_UID, TOKENS_PER_BLOCK
+from hathor.conf import HathorSettings
 from hathor.crypto.util import decode_address
 from hathor.transaction import Transaction, TxInput, TxOutput
 from hathor.transaction.scripts import P2PKH, create_output_script, parse_address_script
 from hathor.wallet.resources.thin_wallet import AddressHistoryResource, SendTokensResource
 from tests.resources.base_resource import StubSite, TestDummyRequest, _BaseResourceTest
 from tests.utils import add_new_blocks
+
+settings = HathorSettings()
 
 
 class SendTokensTest(_BaseResourceTest._ResourceTest):
@@ -24,12 +27,12 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         # Unlocking wallet
         self.manager.wallet.unlock(b'MYPASS')
 
-        per_block = TOKENS_PER_BLOCK * (10**DECIMAL_PLACES)
+        per_block = settings.TOKENS_PER_BLOCK * (10**settings.DECIMAL_PLACES)
         quantity = 3
 
         blocks = add_new_blocks(self.manager, quantity)
 
-        self.assertEqual(self.manager.wallet.balance[HATHOR_TOKEN_UID].available, quantity*per_block)
+        self.assertEqual(self.manager.wallet.balance[settings.HATHOR_TOKEN_UID].available, quantity*per_block)
 
         # Options
         yield self.web.options('thin_wallet/send_tokens')
@@ -40,7 +43,7 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         address = script_type_out.address
         private_key = self.manager.wallet.get_private_key(address)
 
-        output_address = decode_address('15d14K5jMqsN2uwUEFqiPG5SoD7Vr1BfnH')
+        output_address = decode_address(self.get_address(0))
         value = per_block
         o = TxOutput(value, create_output_script(output_address, None))
         o_invalid_amount = TxOutput(value-1, create_output_script(output_address, None))
@@ -93,7 +96,7 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         self.assertTrue(data['success'])
 
         # Check if tokens were really sent
-        self.assertEqual(self.manager.wallet.balance[HATHOR_TOKEN_UID].available, (quantity-1)*per_block)
+        self.assertEqual(self.manager.wallet.balance[settings.HATHOR_TOKEN_UID].available, (quantity-1)*per_block)
 
         response_history = yield self.web_address_history.get(
             'thin_wallet/address_history', {
@@ -103,6 +106,48 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
 
         response_data = response_history.json_value()['history']
         self.assertIn(data['tx']['hash'], [x['tx_id'] for x in response_data])
+
+        def get_new_tx_struct(weight=0):
+            tx = Transaction(inputs=[i], outputs=[o])
+            tx.inputs = tx3.inputs
+            self.clock.advance(5)
+            tx.timestamp = int(self.clock.seconds())
+            if weight == 0:
+                weight = self.manager.minimum_tx_weight(tx)
+            tx.weight = weight
+            return tx.get_struct().hex()
+
+        # Making pow threads full
+        deferreds = []
+        for x in range(settings.MAX_POW_THREADS):
+            d = self.web.post('thin_wallet/send_tokens', {'tx_hex': get_new_tx_struct(50)})
+            d.addErrback(lambda err: None)
+            deferreds.append(d)
+
+        # All threads are in use
+        response = yield self.web.post('thin_wallet/send_tokens', {'tx_hex': get_new_tx_struct(1)})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # Releasing one thread
+        d = deferreds.pop()
+        d.request.processingFailed(Failure(CancelledError()))
+
+        # Waiting for thread to finish
+        yield d.request.thread_deferred
+
+        # Now you can send
+        response = yield self.web.post('thin_wallet/send_tokens', {'tx_hex': get_new_tx_struct(1)})
+        data = response.json_value()
+        self.assertTrue(data['success'])
+
+        # Releasing all other threads
+        for d in deferreds:
+            d.request.processingFailed(Failure(CancelledError()))
+
+        # Waiting for all threads to finish
+        for d in deferreds:
+            yield d.request.thread_deferred
 
     def test_error_request(self):
         resource = SendTokensResource(self.manager)
