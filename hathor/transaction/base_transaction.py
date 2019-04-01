@@ -609,6 +609,8 @@ class BaseTransaction(ABC):
             self.nonce += 1
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
+                if should_stop():
+                    return None
         return None
 
     def get_metadata(self, *, force_reload: bool = False, use_storage: bool = True) -> TransactionMetadata:
@@ -670,22 +672,35 @@ class BaseTransaction(ABC):
 
         accumulated_weight = self.weight
 
-        # TODO We can walk by the blocks first, because they have higher weight and this may
-        # reduce the number of visits in the BFS. One possibility is to use the tx's weight as the weight
-        # of the edge and run a Djikstra.
-
         # TODO Another optimization is that, when we calculate the acc weight of a transaction, we
         # also partially calculate the acc weight of its descendants. If it were a DFS, when returning
         # to a vertex, the acc weight calculated would be <= the real acc weight. So, we might store it
         # as a pre-calculated value. Then, during the next DFS, if `cur + tx.acc_weight > stop_value`,
         # we might stop and avoid some visits. Question: how would we do it in the BFS?
 
+        # We can walk by the blocks first, because they have higher weight and this may
+        # reduce the number of visits in the BFS.
         from hathor.transaction.storage.traversal import BFSWalk
         bfs_walk = BFSWalk(self.storage, is_dag_funds=True, is_dag_verifications=True, is_left_to_right=True)
         for tx in bfs_walk.run(self, skip_root=True):
+            if not tx.is_block:
+                bfs_walk.skip_neighbors(tx)
+                continue
             accumulated_weight = sum_weights(accumulated_weight, tx.weight)
             if accumulated_weight > stop_value:
                 break
+
+        eps = 1e-10
+        if accumulated_weight <= stop_value + eps:
+            # If we are still below stop_value, then we go through the transactions.
+            bfs_walk = BFSWalk(self.storage, is_dag_funds=True, is_dag_verifications=True, is_left_to_right=True)
+            for tx in bfs_walk.run(self, skip_root=True):
+                if tx.is_block:
+                    bfs_walk.skip_neighbors(tx)
+                    continue
+                accumulated_weight = sum_weights(accumulated_weight, tx.weight)
+                if accumulated_weight > stop_value:
+                    break
 
         metadata.accumulated_weight = accumulated_weight
         if save_file:
@@ -757,6 +772,44 @@ class BaseTransaction(ABC):
         data['tokens'] = [uid.hex() for uid in self.tokens]
 
         return data
+
+    def to_json_extended(self) -> Dict[str, Any]:
+        assert self.hash is not None
+        assert self.storage is not None
+
+        def serialize_output(tx: BaseTransaction, tx_out: TxOutput) -> Dict[str, Any]:
+            data = tx_out.to_json(decode_script=True)
+            data['token'] = tx.get_token_uid(tx_out.get_token_index()).hex()
+            data['decoded'].pop('token_data', None)
+            data['decoded'].pop('value', None)
+            return data
+
+        meta = self.get_metadata()
+        ret = {
+            'tx_id': self.hash.hex(),
+            'timestamp': self.timestamp,
+            'is_voided': bool(meta.voided_by),
+            'inputs': [],
+            'outputs': [],
+        }
+        assert isinstance(ret['inputs'], list)
+        assert isinstance(ret['outputs'], list)
+
+        for index, tx_in in enumerate(self.inputs):
+            tx2 = self.storage.get_transaction(tx_in.tx_id)
+            tx2_out = tx2.outputs[tx_in.index]
+            output = serialize_output(tx2, tx2_out)
+            output['tx_id'] = tx2.hash.hex()
+            output['index'] = tx_in.index
+            ret['inputs'].append(output)
+
+        for index, tx_out in enumerate(self.outputs):
+            spent_by = meta.get_output_spent_by(index)
+            output = serialize_output(self, tx_out)
+            output['spent_by'] = spent_by.hex() if spent_by else None
+            ret['outputs'].append(output)
+
+        return ret
 
     @abstractmethod
     def to_proto(self, include_metadata: bool = True) -> protos.BaseTransaction:
