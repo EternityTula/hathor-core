@@ -8,9 +8,9 @@ Hathor uses classic Proof-of-Work (PoW) consensus, with the same algorithm as Bi
 
 ## Software
 
-Hathor nodes implement a [stratum](https://en.bitcoin.it/wiki/Stratum_mining_protocol) server to enable communication with miners. 
+Hathor nodes implement a customized [Stratum Protocol](https://en.bitcoin.it/wiki/Stratum_mining_protocol) server that enable miners to request jobs and receive updates. For further details of our customization, see [this document](TODO stratum RFC).
 
-> **_NOTE:_**  Node owners can choose if they wish to run the stratum server or not. When connecting your miner with a node, make sure it has the server enabled.
+> **_NOTE:_**  Node owners can choose if they wish to run the stratum server or not. When connecting your miner to a node, make sure they have Stratum support enabled.
 
 We have working forks of cpuminer and ccminer compatible with Hathor. For both, you need the hostname and port of a stratum server and a Hathor address to send the reward when you find a new block.
 
@@ -21,12 +21,12 @@ TODO add hathor address to cpuminer and ccminer command, possibly `-u {address}`
 Repo: TODO add link
 
 Basic use is
-```sh
+```
 ./minerd -a sha256d -o stratum+tcp://{hostname}:{port}
 ```
 
 You can choose the number of threads used by cpuminer with `-t`. If you omit this parameter, it will start as many threads as the number of cores in your machine.
-```sh
+```
 ./minerd -a sha256d -o stratum+tcp://{hostname}:{port} -t {num_threads}
 ```
 
@@ -37,7 +37,7 @@ Run `./minerd --help` to see all options.
 Repo: TODO add link
 
 Very similar to cpuminer. Basic use is
-```sh
+```
 ./ccminer -a sha256d -o stratum+tcp://{hostname}:{port}
 ```
 
@@ -51,7 +51,7 @@ We've created Docker images to facilitate running our mining software.
 
 Docker hub: TODO add link
 
-```sh
+```
 docker run TODO_CPUMINER_REPO -a sha256d -o stratum+tcp://{hostname}:{port}
 ```
 
@@ -59,8 +59,8 @@ docker run TODO_CPUMINER_REPO -a sha256d -o stratum+tcp://{hostname}:{port}
 
 Docker hub: TODO add link
 
-> **_NOTE:_**  To have GPU access in your containers, you need to run [nvidia-docker] (https://github.com/NVIDIA/nvidia-docker) instead of the regular docker.
+> **_NOTE:_**  To enable GPU access in your containers, you need to run [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) instead of the regular docker. Also make sure you have NVIDIA drivers installed in your machine. Read more information [here](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)).
 
-```sh
+```
 docker run TODO_CPUMINER_REPO -a sha256d -o stratum+tcp://{hostname}:{port}
 ```
