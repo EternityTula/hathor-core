@@ -590,6 +590,7 @@ class BaseTransactionStorage(TransactionStorage):
     def _del_from_cache(self, tx: BaseTransaction, *, relax_assert: bool = False) -> None:
         if not self.with_index:
             raise NotImplementedError
+        self.all_index.del_tx(tx)
         if tx.is_block:
             self._cache_block_count -= 1
             self.block_index.del_tx(tx, relax_assert=relax_assert)

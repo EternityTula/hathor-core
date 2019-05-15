@@ -500,7 +500,8 @@ class NodeSyncTimestamp(Plugin):
         """
         count = self.MAX_HASHES
 
-        all_sorted = self.manager.tx_storage.get_sorted_txs(timestamp, count, offset)
+        # we want 'count' elements and an extra one to get next_timestamp
+        all_sorted = self.manager.tx_storage.get_sorted_txs(timestamp, count + 1, offset)
         ret_txs = all_sorted[offset:offset+count]
         hashes = [tx.hash.hex() for tx in ret_txs]
 
@@ -510,7 +511,10 @@ class NodeSyncTimestamp(Plugin):
             next_timestamp = inf
         else:
             next_offset = offset + count
-            next_timestamp = ret_txs[-1].timestamp
+            if len(all_sorted.transactions) > next_offset:
+                next_timestamp = all_sorted[next_offset].timestamp
+            else:
+                next_timestamp = all_sorted[next_offset - 1].timestamp
             if next_timestamp != timestamp:
                 next_idx = all_sorted.find_first_at_timestamp(next_timestamp)
                 next_offset -= next_idx
