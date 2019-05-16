@@ -201,12 +201,22 @@ class TransactionsIndex:
     def __init__(self) -> None:
         self.transactions = SortedKeyList(key=lambda x: (x.timestamp, x.hash))
 
-    def __getitem__(self, index: slice) -> List[TransactionIndexElement]:
-        """ Get items from SortedKeyList given a slice
+    def __getitem__(self, index):
+        """ Get items from SortedKeyList given a slice or int
 
-        :param index: list index slice, for eg [1:6]
+        No type annotations for now.
+        It should be a Union[List[TransactionIndexElement], TransactionIndexElement].
+        mypy is happy if we use @overload: https://www.pythonsheets.com/notes/python-typing.html#overload
+        But flake8 will complain: https://github.com/PyCQA/pyflakes/issues/320
+        The issue seems to be fixed already, but not on a stable release yet.
+
+        :param index: int or list index slice, for eg [1:6]
         """
         return self.transactions[index]
+
+    def __len__(self) -> int:
+        """ Length of SortedKeyList object"""
+        return len(self.transactions)
 
     def update(self, values: List[TransactionIndexElement]) -> None:
         """ Update sorted list by adding all values from iterable

@@ -505,16 +505,13 @@ class NodeSyncTimestamp(Plugin):
         ret_txs = all_sorted[offset:offset+count]
         hashes = [tx.hash.hex() for tx in ret_txs]
 
-        if len(ret_txs) < count:
+        if len(ret_txs) < count or len(all_sorted) == (offset+count):
             # this means we've reached the end and there's nothing else to sync
             next_offset = 0
             next_timestamp = inf
         else:
             next_offset = offset + count
-            if len(all_sorted.transactions) > next_offset:
-                next_timestamp = all_sorted[next_offset].timestamp
-            else:
-                next_timestamp = all_sorted[next_offset - 1].timestamp
+            next_timestamp = all_sorted[next_offset].timestamp
             if next_timestamp != timestamp:
                 next_idx = all_sorted.find_first_at_timestamp(next_timestamp)
                 next_offset -= next_idx
