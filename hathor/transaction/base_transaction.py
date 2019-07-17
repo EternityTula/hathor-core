@@ -975,11 +975,11 @@ class TxOutput:
 
     def can_mint_token(self) -> bool:
         """Whether this utxo can mint tokens"""
-        return self.is_token_authority() and ((self.value & self.TOKEN_MINT_MASK) > 0)
+        return self.is_token_authority() and ((self.value & self.TOKEN_MINT_MASK) > 0 or self.is_token_creation())
 
     def can_melt_token(self) -> bool:
         """Whether this utxo can melt tokens"""
-        return self.is_token_authority() and ((self.value & self.TOKEN_MELT_MASK) > 0)
+        return self.is_token_authority() and ((self.value & self.TOKEN_MELT_MASK) > 0 or self.is_token_creation())
 
     def to_human_readable(self) -> Dict[str, Any]:
         """Checks what kind of script this is and returns it in human readable form
