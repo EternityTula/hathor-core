@@ -144,40 +144,31 @@ class Transaction(BaseTransaction):
         """Verify outputs reference an existing token uid in the tx list and there are no hathor
         authority UTXOs
 
+        If it's a creation output, we validate that it has only two outputs and only one of them is creation
+
         :raises InvalidToken: output references non existent token uid or when there's a hathor authority utxo
         """
+        has_token_creation = False
+
         for output in self.outputs:
             # check index is valid
             if output.get_token_index() > len(self.tokens):
                 raise InvalidToken('token uid index not available: index {}'.format(output.get_token_index()))
 
-            # no hathor authority UTXO
-            if (output.get_token_index() == 0) and output.is_token_authority():
+            # no hathor authority UTXO, only if its creation
+            if (output.get_token_index() == 0) and (output.is_token_authority() and not output.is_token_creation()):
                 raise InvalidToken('Cannot have authority UTXO for hathor tokens: {}'.format(
                     output.to_human_readable()))
 
-    def create_token_uid(self, index: int) -> bytes:
-        """Returns the token uid for a token in a given output position.
+            # token creation outputs must have 2 outputs and only one of them can be a creation output
+            if output.is_token_creation():
+                if len(self.outputs) !== 2:
+                    raise InvalidToken('Creation tx must have 2 outputs')
 
-        The uid is the hash of an input_id + input_index. The input is the one whose index is the same
-        as the token creation output. For eg, if the token creation UTXO is the 3rd output, we'll use
-        the 3rd input for computing its uid.
+                if has_token_creation:
+                    raise InvalidToken('Creation tx must have only one creation output')
 
-        :param index: position of the token output in the output list
-        :type index: int
-
-        :return: the new token uid
-        :rtype: bytes
-
-        :raises InvalidToken: no matching input for given index
-        """
-        if index >= len(self.inputs):
-            raise InvalidToken('no matching input for index {}'.format(index))
-        _input: TxInput = self.inputs[index]
-        m = hashlib.sha256()
-        m.update(_input.tx_id)
-        m.update(bytes([_input.index]))
-        return m.digest()
+                has_token_creation = True
 
     def verify_sum(self) -> None:
         """Verify that the sum of outputs is equal of the sum of inputs, for each token.
@@ -195,9 +186,19 @@ class Transaction(BaseTransaction):
 
         default_info: TokenInfo = TokenInfo(0, False, False)
 
+        create_token_tx_id: Optional[bytes] = None
+
         for input_tx in self.inputs:
             spent_tx = self.get_spent_tx(input_tx)
             spent_output = spent_tx.outputs[input_tx.index]
+
+            if spent_output.is_token_creation():
+                # This tx is minting the new tokens
+                # so this tx id is the uid of the new token
+                create_token_tx_id = spent_tx.hash
+                # Spending token creation output can mint and melt
+                token_dict[spent_tx.hash] = TokenInfo(0, True, True)
+                continue
 
             token_uid = spent_tx.get_token_uid(spent_output.get_token_index())
             (amount, can_mint, can_melt) = token_dict.get(token_uid, default_info)
@@ -214,7 +215,8 @@ class Transaction(BaseTransaction):
             token_info = token_dict.get(token_uid)
             if token_info is None:
                 # was not in the inputs, so it must be a new token
-                if tx_output.is_token_creation():
+                # check if the token uid is really its creation tx id
+                if token_uid == create_token_tx_id:
                     created_tokens.append((token_uid, index))
                 else:
                     raise InvalidToken('no token creation and no inputs for token {}'.format(token_uid.hex()))
@@ -250,12 +252,6 @@ class Transaction(BaseTransaction):
                 if not token_info.can_mint:
                     raise InputOutputMismatch('{} {} tokens minted, but there is no mint authority input'.format(
                         (-1) * token_info.amount, token_uid.hex()))
-
-        # make sure created tokens have correct hash
-        for token_uid, index in created_tokens:
-            if token_uid != self.create_token_uid(index):
-                raise InvalidToken('token creation with invalid uid; expecting {}, got {}; output index {}'.format(
-                    self.create_token_uid(index), token_uid, index))
 
     def verify_inputs(self) -> None:
         """Verify inputs signatures and ownership and all inputs actually exist"""
