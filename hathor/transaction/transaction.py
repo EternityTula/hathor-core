@@ -1,4 +1,3 @@
-import hashlib
 from collections import namedtuple
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple
 
