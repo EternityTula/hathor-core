@@ -144,12 +144,10 @@ class Transaction(BaseTransaction):
         """Verify outputs reference an existing token uid in the tx list and there are no hathor
         authority UTXOs
 
-        If it's a creation output, we validate that it has only two outputs and only one of them is creation
+        If it's a creation output, we validate that it has only one output
 
         :raises InvalidToken: output references non existent token uid or when there's a hathor authority utxo
         """
-        has_token_creation = False
-
         for output in self.outputs:
             # check index is valid
             if output.get_token_index() > len(self.tokens):
@@ -160,15 +158,10 @@ class Transaction(BaseTransaction):
                 raise InvalidToken('Cannot have authority UTXO for hathor tokens: {}'.format(
                     output.to_human_readable()))
 
-            # token creation outputs must have 2 outputs and only one of them can be a creation output
+            # token creation tx must have 1 output only
             if output.is_token_creation():
-                if len(self.outputs) !== 2:
+                if len(self.outputs) != 1:
                     raise InvalidToken('Creation tx must have 2 outputs')
-
-                if has_token_creation:
-                    raise InvalidToken('Creation tx must have only one creation output')
-
-                has_token_creation = True
 
     def verify_sum(self) -> None:
         """Verify that the sum of outputs is equal of the sum of inputs, for each token.
@@ -218,7 +211,8 @@ class Transaction(BaseTransaction):
                 # check if the token uid is really its creation tx id
                 if token_uid == create_token_tx_id:
                     created_tokens.append((token_uid, index))
-                else:
+                elif not tx_output.is_token_creation():
+                    # Should only raise exception if it's not a creation token output
                     raise InvalidToken('no token creation and no inputs for token {}'.format(token_uid.hex()))
             else:
                 # for authority outputs, make sure the same capability (mint/melt) was present in the inputs
