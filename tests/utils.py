@@ -563,10 +563,7 @@ def create_tokens(manager: 'HathorManager', address_b58: str = None, genesis_ind
     :return: the propagated transaction so others can spend their outputs
     """
     genesis = manager.tx_storage.get_all_genesis()
-    genesis_blocks = [tx for tx in genesis if tx.is_block]
     genesis_txs = [tx for tx in genesis if not tx.is_block]
-    genesis_block = genesis_blocks[genesis_index]
-    genesis_private_key = get_genesis_key()
 
     wallet = manager.wallet
 
@@ -574,39 +571,28 @@ def create_tokens(manager: 'HathorManager', address_b58: str = None, genesis_ind
         address_b58 = wallet.get_unused_address(mark_as_used=True)
     address = decode_address(address_b58)
 
-    _input1 = TxInput(genesis_block.hash, genesis_index, b'')
-
-    # we send genesis tokens to a random address so we don't add hathors to the user's wallet
-    rand_address = decode_address('1Pa4MMsr5DMRAeU1PzthFXyEJeVNXsMHoz')
-    rand_script = P2PKH.create_output_script(rand_address)
-    value = genesis_block.outputs[genesis_index].value
-    output = TxOutput(value, rand_script, 0)
-
     parents = [tx.hash for tx in genesis_txs]
     tx = Transaction(
         weight=1,
-        inputs=[_input1],
+        inputs=[],
         parents=parents,
         storage=manager.tx_storage,
         timestamp=int(manager.reactor.seconds())
     )
 
     # create token
-    token_masks = TxOutput.TOKEN_CREATION_MASK | TxOutput.TOKEN_MINT_MASK | TxOutput.TOKEN_MELT_MASK
-    new_token_uid = tx.create_token_uid(0)
-    tx.tokens.append(new_token_uid)
+    token_masks = TxOutput.TOKEN_CREATION_MASK
     script = P2PKH.create_output_script(address)
-    token_output = TxOutput(token_masks, script, 0b10000001)
+    token_output = TxOutput(token_masks, script, 0b10000000)
 
     # finish and propagate tx
-    tx.outputs = [token_output, output]
-    data_to_sign = tx.get_sighash_all(clear_input_data=True)
-    public_bytes, signature = wallet.get_input_aux_data(data_to_sign, genesis_private_key)
-    tx.inputs[0].data = P2PKH.create_input_data(public_bytes, signature)
+    tx.outputs = [token_output]
     tx.resolve()
     tx.verify()
     manager.propagate_tx(tx, fails_silently=False)
     manager.reactor.advance(8)
+
+    new_token_uid = tx.hash
 
     # mint tokens
     parents = manager.get_new_tx_parents()

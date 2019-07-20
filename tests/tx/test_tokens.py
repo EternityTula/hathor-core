@@ -98,23 +98,9 @@ class TokenTest(unittest.TestCase):
         parents = [tx.hash for tx in self.genesis_txs]
         tx = Transaction(weight=1, inputs=[_input], parents=parents, storage=self.manager.tx_storage)
 
-        # incorrect token uid
-        new_token_uid = bytes.fromhex('0023be91834c973d6a6ddd1a0ae411807b7c8ef2a015afb5177ee64b666ce602')
-        tx.tokens = [new_token_uid]
-        token_output = TxOutput(TxOutput.TOKEN_CREATION_MASK, script, 0b10000001)
+        # Creation token tx must have only one output
+        token_output = TxOutput(TxOutput.TOKEN_CREATION_MASK, script, 0b10000000)
         tx.outputs = [token_output, output]
-        data_to_sign = tx.get_sighash_all(clear_input_data=True)
-        public_bytes, signature = self.manager.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
-        tx.inputs[0].data = P2PKH.create_input_data(public_bytes, signature)
-        tx.resolve()
-        with self.assertRaises(InvalidToken):
-            tx.verify()
-
-        # token creation with no corresponding input
-        new_token_uid = tx.create_token_uid(0)
-        tx.tokens = [new_token_uid]
-        token_output = TxOutput(TxOutput.TOKEN_CREATION_MASK, script, 0b10000001)
-        tx.outputs = [output, token_output]
         data_to_sign = tx.get_sighash_all(clear_input_data=True)
         public_bytes, signature = self.manager.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
         tx.inputs[0].data = P2PKH.create_input_data(public_bytes, signature)
@@ -123,25 +109,17 @@ class TokenTest(unittest.TestCase):
             tx.verify()
 
         # token creation without creation flag
-        new_token_uid = tx.create_token_uid(0)
-        tx.tokens = [new_token_uid]
-        token_output = TxOutput(TxOutput.TOKEN_MINT_MASK | TxOutput.TOKEN_MELT_MASK, script, 0b10000001)
-        tx.outputs = [token_output, output]
-        data_to_sign = tx.get_sighash_all(clear_input_data=True)
-        public_bytes, signature = self.manager.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
-        tx.inputs[0].data = P2PKH.create_input_data(public_bytes, signature)
+        token_output = TxOutput(TxOutput.TOKEN_MINT_MASK | TxOutput.TOKEN_MELT_MASK, script, 0b10000000)
+        tx.outputs = [token_output]
+        tx.inputs = []
         tx.resolve()
         with self.assertRaises(InvalidToken):
             tx.verify()
 
         # correct token uid
-        new_token_uid = tx.create_token_uid(0)
-        tx.tokens = [new_token_uid]
-        token_output = TxOutput(TxOutput.TOKEN_CREATION_MASK, script, 0b10000001)
-        tx.outputs = [token_output, output]
-        data_to_sign = tx.get_sighash_all(clear_input_data=True)
-        public_bytes, signature = self.manager.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
-        tx.inputs[0].data = P2PKH.create_input_data(public_bytes, signature)
+        token_output = TxOutput(TxOutput.TOKEN_CREATION_MASK, script, 0b10000000)
+        tx.outputs = [token_output]
+        tx.inputs = []
         tx.resolve()
         tx.verify()
 
