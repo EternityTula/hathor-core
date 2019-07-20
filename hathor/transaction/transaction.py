@@ -188,6 +188,7 @@ class Transaction(BaseTransaction):
                 # This tx is minting the new tokens
                 # so this tx id is the uid of the new token
                 create_token_tx_id = spent_tx.hash
+                assert spent_tx.hash is not None
                 # Spending token creation output can mint and melt
                 token_dict[spent_tx.hash] = TokenInfo(0, True, True)
                 continue
