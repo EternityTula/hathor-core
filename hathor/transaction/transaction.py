@@ -160,7 +160,7 @@ class Transaction(BaseTransaction):
             # token creation tx must have 1 output only
             if output.is_token_creation():
                 if len(self.outputs) != 1:
-                    raise InvalidToken('Creation tx must have 2 outputs')
+                    raise InvalidToken('Creation tx must have 1 output')
 
     def verify_sum(self) -> None:
         """Verify that the sum of outputs is equal of the sum of inputs, for each token.
@@ -173,8 +173,6 @@ class Transaction(BaseTransaction):
         """
         # token dict sums up all tokens present in the tx and their properties (amount, mint, melt)
         token_dict: Dict[bytes, TokenInfo] = {}
-        # created tokens contains tokens being created in this tx and the corresponding output index
-        created_tokens: List[Tuple[bytes, int]] = []  # List[(token_uid, index)]
 
         default_info: TokenInfo = TokenInfo(0, False, False)
 
@@ -209,9 +207,7 @@ class Transaction(BaseTransaction):
             if token_info is None:
                 # was not in the inputs, so it must be a new token
                 # check if the token uid is really its creation tx id
-                if token_uid == create_token_tx_id:
-                    created_tokens.append((token_uid, index))
-                elif not tx_output.is_token_creation():
+                if token_uid != create_token_tx_id and not tx_output.is_token_creation():
                     # Should only raise exception if it's not a creation token output
                     raise InvalidToken('no token creation and no inputs for token {}'.format(token_uid.hex()))
             else:
