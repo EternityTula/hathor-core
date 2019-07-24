@@ -157,10 +157,12 @@ class Transaction(BaseTransaction):
                 raise InvalidToken('Cannot have authority UTXO for hathor tokens: {}'.format(
                     output.to_human_readable()))
 
-            # token creation tx must have 1 output only
+            # token creation tx must have 1 output only and no inputs
             if output.is_token_creation():
                 if len(self.outputs) != 1:
                     raise InvalidToken('Creation tx must have 1 output')
+                if len(self.inputs) != 0:
+                    raise InvalidToken('Creation tx must have no inputs')
 
     def verify_sum(self) -> None:
         """Verify that the sum of outputs is equal of the sum of inputs, for each token.
@@ -176,38 +178,36 @@ class Transaction(BaseTransaction):
 
         default_info: TokenInfo = TokenInfo(0, False, False)
 
-        create_token_tx_id: Optional[bytes] = None
-
         for input_tx in self.inputs:
             spent_tx = self.get_spent_tx(input_tx)
             spent_output = spent_tx.outputs[input_tx.index]
 
             if spent_output.is_token_creation():
                 # This tx is minting the new tokens
-                # so this tx id is the uid of the new token
-                create_token_tx_id = spent_tx.hash
+                # so the spent_tx hash is the uid of the new token
                 assert spent_tx.hash is not None
                 # Spending token creation output can mint and melt
                 token_dict[spent_tx.hash] = TokenInfo(0, True, True)
-                continue
-
-            token_uid = spent_tx.get_token_uid(spent_output.get_token_index())
-            (amount, can_mint, can_melt) = token_dict.get(token_uid, default_info)
-            if spent_output.is_token_authority():
-                can_mint = can_mint or spent_output.can_mint_token()
-                can_melt = can_melt or spent_output.can_melt_token()
             else:
-                amount += spent_output.value
-            token_dict[token_uid] = TokenInfo(amount, can_mint, can_melt)
+                token_uid = spent_tx.get_token_uid(spent_output.get_token_index())
+                (amount, can_mint, can_melt) = token_dict.get(token_uid, default_info)
+                if spent_output.is_token_authority():
+                    can_mint = can_mint or spent_output.can_mint_token()
+                    can_melt = can_melt or spent_output.can_melt_token()
+                else:
+                    amount += spent_output.value
+                token_dict[token_uid] = TokenInfo(amount, can_mint, can_melt)
 
         # iterate over outputs and subtract spent values from token_map
         for index, tx_output in enumerate(self.outputs):
             token_uid = self.get_token_uid(tx_output.get_token_index())
             token_info = token_dict.get(token_uid)
             if token_info is None:
-                # was not in the inputs, so it must be a new token
-                # check if the token uid is really its creation tx id
-                if token_uid != create_token_tx_id and not tx_output.is_token_creation():
+                # Two possibilities to enter this if:
+                # 1. there is an output with a token uid that is not in any input
+                # 2. the tx is a create token tx (so, there are no inputs)
+                # The case 1 should raise an exception
+                if not tx_output.is_token_creation():
                     # Should only raise exception if it's not a creation token output
                     raise InvalidToken('no token creation and no inputs for token {}'.format(token_uid.hex()))
             else:
