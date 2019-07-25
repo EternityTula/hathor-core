@@ -159,12 +159,14 @@ class Transaction(BaseTransaction):
             if output.is_token_creation():
                 is_token_creation = True
                 break
-        
+
         if is_token_creation:
             if len(self.data) == 0:
                 raise TransactionDataError('Data field is required when creating a new token')
 
             data = self.to_json_data_field()
+
+            assert data is not None
 
             if len(data['name']) > settings.MAX_TOKEN_NAME:
                 raise TransactionDataError('Token name limit is {} characters'.format(settings.MAX_TOKEN_NAME))
@@ -175,7 +177,7 @@ class Transaction(BaseTransaction):
         else:
             if len(self.data) > 0:
                 raise TransactionDataError('Data field must be empty when not creating a new token')
-    
+
     def to_json_data_field(self) -> Optional[Dict[str, str]]:
         """ We assume that data field should be empty, or have name and symbol of a created token
             It will have:

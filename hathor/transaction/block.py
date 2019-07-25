@@ -1,14 +1,14 @@
 import base64
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set
+from typing import TYPE_CHECKING, Iterable, List, Optional, Set
 
 from twisted.logger import Logger
 
 from hathor import protos
 from hathor.conf import HathorSettings
 from hathor.transaction.base_transaction import BaseTransaction, TxOutput, sum_weights
-from hathor.transaction.exceptions import TransactionDataError, BlockWithInputs, BlockWithTokensError
-from hathor.transaction.util import int_to_bytes, unpack, unpack_len
+from hathor.transaction.exceptions import BlockWithInputs, BlockWithTokensError, TransactionDataError
+from hathor.transaction.util import int_to_bytes
 
 if TYPE_CHECKING:
     from hathor.transaction.storage import TransactionStorage  # noqa: F401
