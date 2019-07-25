@@ -1,5 +1,6 @@
 import hashlib
 from collections import namedtuple
+from struct import error as StructError
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple
 
 from twisted.logger import Logger
@@ -17,8 +18,9 @@ from hathor.transaction.exceptions import (
     TimestampError,
     TooManyInputs,
     TooManyOutputs,
+    TransactionDataError,
 )
-from hathor.transaction.util import unpack
+from hathor.transaction.util import unpack, unpack_len
 
 if TYPE_CHECKING:
     from hathor.transaction.storage import TransactionStorage  # noqa: F401
@@ -36,14 +38,15 @@ class Transaction(BaseTransaction):
     def __init__(self, nonce: int = 0, timestamp: Optional[int] = None, version: int = 1, weight: float = 0,
                  inputs: Optional[List[TxInput]] = None, outputs: Optional[List[TxOutput]] = None,
                  parents: Optional[List[bytes]] = None, tokens: Optional[List[bytes]] = None,
-                 hash: Optional[bytes] = None, storage: Optional['TransactionStorage'] = None) -> None:
+                 hash: Optional[bytes] = None, storage: Optional['TransactionStorage'] = None,
+                 data: bytes = b'') -> None:
         """
             Creating new init just to make sure inputs will always be empty array
             Inputs: all inputs that are being used (empty in case of a block)
         """
         super().__init__(nonce=nonce, timestamp=timestamp, version=version, weight=weight, inputs=inputs
                          or [], outputs=outputs or [], parents=parents or [], tokens=tokens or [], hash=hash,
-                         storage=storage, is_block=False)
+                         storage=storage, is_block=False, data=data)
 
     def to_proto(self, include_metadata: bool = True) -> protos.BaseTransaction:
         tx_proto = protos.Transaction(
@@ -56,6 +59,7 @@ class Transaction(BaseTransaction):
             outputs=map(TxOutput.to_proto, self.outputs),
             nonce=self.nonce,
             hash=self.hash,
+            data=self.data
         )
         if include_metadata:
             tx_proto.metadata.CopyFrom(self.get_metadata().to_proto())
@@ -76,6 +80,7 @@ class Transaction(BaseTransaction):
             inputs=list(map(TxInput.create_from_proto, transaction_proto.inputs)),
             outputs=list(map(TxOutput.create_from_proto, transaction_proto.outputs)),
             storage=storage,
+            data=transaction_proto.data
         )
         if transaction_proto.HasField('metadata'):
             from hathor.transaction import TransactionMetadata
@@ -129,6 +134,7 @@ class Transaction(BaseTransaction):
         self.verify_number_of_inputs()
         self.verify_number_of_outputs()
         self.verify_outputs()
+        self.verify_data()
 
     def verify_number_of_inputs(self) -> None:
         """Verify number of inputs does not exceeds the limit"""
@@ -139,6 +145,61 @@ class Transaction(BaseTransaction):
         """Verify number of outputs does not exceeds the limit"""
         if len(self.outputs) > MAX_NUM_OUTPUTS:
             raise TooManyOutputs('Maximum number of outputs exceeded')
+
+    def verify_data(self) -> None:
+        """
+            Add data field validation
+            - If is not creating a new token, data field must be empty
+            - If is creating a new token, we must have data:
+              . Name must be at most 20 characters
+              . Symbol must be at most 5 characters
+        """
+        is_token_creation = False
+
+        for output in self.outputs:
+            if output.is_token_creation():
+                is_token_creation = True
+                break
+        
+        if is_token_creation:
+            if len(self.data) == 0:
+                raise TransactionDataError('Data field is required when creating a new token')
+
+            data = self.to_json_data_field()
+
+            if len(data['name']) > settings.MAX_TOKEN_NAME:
+                raise TransactionDataError('Token name limit is {} characters'.format(settings.MAX_TOKEN_NAME))
+
+            if len(data['symbol']) > settings.MAX_TOKEN_SYMBOL:
+                raise TransactionDataError('Token symbol limit is {} characters'.format(settings.MAX_TOKEN_NAME))
+
+        else:
+            if len(self.data) > 0:
+                raise TransactionDataError('Data field must be empty when not creating a new token')
+    
+    def to_json_data_field(self) -> Optional[Dict[str, str]]:
+        """ We assume that data field should be empty, or have name and symbol of a created token
+            It will have:
+              - First byte: size of name (n);
+              - Next n bytes: name;
+              - Next byte: size of symbol (m);
+              - Next m bytes: symbol;
+        """
+        if len(self.data) == 0:
+            return None
+
+        try:
+            # Unpacking name
+            (name_size,), buf = unpack('!B', self.data)
+            name, buf = unpack_len(name_size, buf)
+
+            # Unpacking symbol
+            (symbol_size,), buf = unpack('!B', buf)
+            symbol, buf = unpack_len(symbol_size, buf)
+
+            return {'name': name, 'symbol': symbol}
+        except StructError:
+            raise TransactionDataError('Invalid data field struct')
 
     def verify_outputs(self) -> None:
         """Verify outputs reference an existing token uid in the tx list and there are no hathor

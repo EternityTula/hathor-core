@@ -27,6 +27,7 @@ message Transaction {
   // hash may be precomputed, should only be trusted if // it is sent by the storage
   bytes hash = 9;  // always of size 32 or empty
   Metadata metadata = 10;
+  bytes data = 11;
 }
 
 message Block {

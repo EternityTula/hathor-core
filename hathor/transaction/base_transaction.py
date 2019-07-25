@@ -92,7 +92,7 @@ class BaseTransaction(ABC):
                  inputs: Optional[List['TxInput']] = None, outputs: Optional[List['TxOutput']] = None,
                  parents: Optional[List[bytes]] = None, tokens: Optional[List[bytes]] = None,
                  hash: Optional[bytes] = None, storage: Optional['TransactionStorage'] = None,
-                 is_block: bool = True) -> None:
+                 is_block: bool = True, data: bytes = b'') -> None:
         """
             Nonce: nonce used for the proof-of-work
             Timestamp: moment of creation
@@ -113,6 +113,7 @@ class BaseTransaction(ABC):
         self.storage = storage
         self.hash = hash  # Stored as bytes.
         self.is_block = is_block
+        self.data = data
 
     def __repr__(self) -> str:
         class_name = type(self).__name__
@@ -347,6 +348,9 @@ class BaseTransaction(ABC):
             parent, buf = unpack_len(32, buf)  # 256bits
             self.parents.append(parent)
 
+        (data_bytes,), buf = unpack('!B', buf)
+        self.data, buf = unpack_len(data_bytes, buf)
+
         return buf
 
     def get_funds_struct(self) -> bytes:
@@ -388,6 +392,11 @@ class BaseTransaction(ABC):
         struct_bytes = pack(_GRAPH_FORMAT_STRING, self.weight, self.timestamp, len(self.parents))
         for parent in self.parents:
             struct_bytes += parent
+
+        # Adding data field
+        struct_bytes += int_to_bytes(len(self.data), 1)
+        struct_bytes += self.data
+
         return struct_bytes
 
     def get_struct_without_nonce(self) -> bytes:
@@ -745,6 +754,9 @@ class BaseTransaction(ABC):
         assert self.storage is not None
         return self.storage.get_transaction(input_tx.tx_id)
 
+    def to_json_data_field(self):
+        raise NotImplementedError
+
     def to_json(self, decode_script: bool = False) -> Dict[str, Any]:
         data: Dict[str, Any] = {}
         data['hash'] = self.hash and self.hash.hex()
@@ -777,6 +789,7 @@ class BaseTransaction(ABC):
             data['outputs'].append(output.to_json(decode_script=decode_script))
 
         data['tokens'] = [uid.hex() for uid in self.tokens]
+        data['data'] = self.to_json_data_field()
 
         return data
 
@@ -820,6 +833,8 @@ class BaseTransaction(ABC):
             output = serialize_output(self, tx_out)
             output['spent_by'] = spent_by.hex() if spent_by else None
             ret['outputs'].append(output)
+
+        ret['data'] = self.to_json_data_field()
 
         return ret
 

@@ -64,6 +64,10 @@ class InvalidToken(TxValidationError):
     """Token is not valid"""
 
 
+class TransactionDataError(TxValidationError):
+    """Error in tx/block data field"""
+
+
 class BlockError(TxValidationError):
     """Base class for Block-specific errors"""
 
@@ -74,10 +78,6 @@ class BlockWithInputs(BlockError):
 
 class BlockWithTokensError(BlockError):
     """Block has tokens other than hathor"""
-
-
-class BlockDataError(BlockError):
-    """Block data max length exceeded"""
 
 
 class ScriptError(HathorError):

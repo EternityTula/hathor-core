@@ -7,7 +7,7 @@ from twisted.logger import Logger
 from hathor import protos
 from hathor.conf import HathorSettings
 from hathor.transaction.base_transaction import BaseTransaction, TxOutput, sum_weights
-from hathor.transaction.exceptions import BlockDataError, BlockWithInputs, BlockWithTokensError
+from hathor.transaction.exceptions import TransactionDataError, BlockWithInputs, BlockWithTokensError
 from hathor.transaction.util import int_to_bytes, unpack, unpack_len
 
 if TYPE_CHECKING:
@@ -26,8 +26,8 @@ class Block(BaseTransaction):
                  hash: Optional[bytes] = None, storage: Optional['TransactionStorage'] = None,
                  data: bytes = b'') -> None:
         super().__init__(nonce=nonce, timestamp=timestamp, version=version, weight=weight,
-                         outputs=outputs or [], parents=parents or [], hash=hash, storage=storage, is_block=True)
-        self.data = data
+                         outputs=outputs or [], parents=parents or [], hash=hash, storage=storage,
+                         is_block=True, data=data)
 
     def to_proto(self, include_metadata: bool = True) -> protos.BaseTransaction:
         tx_proto = protos.Block(
@@ -92,37 +92,10 @@ class Block(BaseTransaction):
         assert self.storage is not None
         return self.storage.get_transaction(self.get_block_parent_hash())
 
-    def get_graph_fields_from_struct(self, buf: bytes) -> bytes:
-        """ Gets graph fields for a block from a buffer.
-
-        :param buf: Bytes of a serialized transaction
-        :type buf: bytes
-
-        :return: A buffer containing the remaining struct bytes
-        :rtype: bytes
-
-        :raises ValueError: when the sequence of bytes is incorect
+    def to_json_data_field(self) -> str:
+        """ Return base64 of the block data bytes
         """
-        buf = super().get_graph_fields_from_struct(buf)
-        (data_bytes,), buf = unpack('!B', buf)
-        self.data, buf = unpack_len(data_bytes, buf)
-        return buf
-
-    def get_graph_struct(self) -> bytes:
-        """Return the graph data serialization of the block, without including the nonce field
-
-        :return: graph data serialization of the transaction
-        :rtype: bytes
-        """
-        struct_bytes_without_data = super().get_graph_struct()
-        data_bytes = int_to_bytes(len(self.data), 1)
-        return struct_bytes_without_data + data_bytes + self.data
-
-    # TODO: maybe introduce convention on serialization methods names (e.g. to_json vs get_struct)
-    def to_json(self, decode_script: bool = False) -> Dict[str, Any]:
-        json = super().to_json(decode_script)
-        json['data'] = base64.b64encode(self.data).decode('utf-8')
-        return json
+        return base64.b64encode(self.data).decode('utf-8')
 
     def verify_no_inputs(self) -> None:
         inputs = getattr(self, 'inputs', None)
@@ -141,7 +114,7 @@ class Block(BaseTransaction):
 
     def verify_data(self) -> None:
         if len(self.data) > settings.BLOCK_DATA_MAX_SIZE:
-            raise BlockDataError('block data has {} bytes'.format(len(self.data)))
+            raise TransactionDataError('block data has {} bytes'.format(len(self.data)))
 
     def verify_without_storage(self) -> None:
         """ Run all verifications that do not need a storage.

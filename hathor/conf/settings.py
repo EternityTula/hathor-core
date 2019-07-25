@@ -127,3 +127,9 @@ class HathorSettings(NamedTuple):
 
     # Whether miners are assumed to mine txs by default
     STRATUM_MINE_TXS_DEFAULT: bool = True
+
+    # Maximum limit of characters in a token name
+    MAX_TOKEN_NAME: int = 20
+
+    # Maximum limit of characters in a token symbol
+    MAX_TOKEN_SYMBOL: int = 5
