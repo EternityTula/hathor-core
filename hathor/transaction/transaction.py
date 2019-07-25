@@ -174,6 +174,12 @@ class Transaction(BaseTransaction):
             if len(data['symbol']) > settings.MAX_TOKEN_SYMBOL:
                 raise TransactionDataError('Token symbol limit is {} characters'.format(settings.MAX_TOKEN_SYMBOL))
 
+            if len(data['name']) == 0:
+                raise TransactionDataError('Token name is required')
+
+            if len(data['symbol']) == 0:
+                raise TransactionDataError('Token symbol is required')
+
         else:
             if len(self.data) > 0:
                 raise TransactionDataError('Data field must be empty when not creating a new token')
