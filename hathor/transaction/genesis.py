@@ -20,15 +20,15 @@ BLOCK_GENESIS = Block(
 )
 
 TX_GENESIS1 = Transaction(
-    hash=bytes.fromhex('000250e65d8cb4044a4f5659720179e5faeb13d01476a3fb283c7bb8e57e4d0f'),
-    nonce=596,
+    hash=bytes.fromhex('00039c16436678585e2344e64d3a0a38ba6a20fcd2d3f57844f8530acff34755'),
+    nonce=8932,
     timestamp=1560920001,
     weight=settings.MIN_TX_WEIGHT,
 )
 
 TX_GENESIS2 = Transaction(
-    hash=bytes.fromhex('000039762550478005083fcab58a465b3d83148d067e4c827a96b5eec1635401'),
-    nonce=22773,
+    hash=bytes.fromhex('0001dbb0739130b719f7c4d2c77700eda5bc1895018056819e4395bbc5ffb59d'),
+    nonce=8949,
     timestamp=1560920002,
     weight=settings.MIN_TX_WEIGHT,
 )
