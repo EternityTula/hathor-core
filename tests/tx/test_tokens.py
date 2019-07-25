@@ -1,6 +1,6 @@
 from hathor.crypto.util import decode_address
 from hathor.transaction import Block, Transaction, TxInput, TxOutput
-from hathor.transaction.exceptions import BlockWithTokensError, InputOutputMismatch, InvalidToken
+from hathor.transaction.exceptions import BlockWithTokensError, InputOutputMismatch, InvalidToken, TransactionDataError
 from hathor.transaction.scripts import P2PKH
 from tests import unittest
 from tests.utils import create_tokens, get_create_token_data, get_genesis_key
@@ -256,8 +256,50 @@ class TokenTest(unittest.TestCase):
         with self.assertRaises(InvalidToken):
             tx3.verify()
 
-    # def test_create_token_transaction(self):
-        # TODO Validate all tx creation errors
+    def test_create_token_transaction(self):
+        script = P2PKH.create_output_script(self.address)
+        parents = [tx.hash for tx in self.genesis_txs]
+        tx = Transaction(weight=1, inputs=[], parents=parents, storage=self.manager.tx_storage)
+        tx.outputs = [TxOutput(TxOutput.TOKEN_CREATION_MASK, script, 0b10000000)]
+
+        tx.data = b''
+        tx.resolve()
+
+        with self.assertRaises(TransactionDataError):
+            tx.verify()
+
+        # Symbol is required
+        tx.data = get_create_token_data('test', '')
+        tx.resolve()
+
+        with self.assertRaises(TransactionDataError):
+            tx.verify()
+
+        # Name is required
+        tx.data = get_create_token_data('', 'test')
+        tx.resolve()
+
+        with self.assertRaises(TransactionDataError):
+            tx.verify()
+
+        # Name limit
+        tx.data = get_create_token_data('testtesttesttesttesttest', 'test')
+        tx.resolve()
+
+        with self.assertRaises(TransactionDataError):
+            tx.verify()
+
+        # Symbol limit
+        tx.data = get_create_token_data('test', 'testtest')
+        tx.resolve()
+
+        with self.assertRaises(TransactionDataError):
+            tx.verify()
+
+        # Valid data
+        tx.data = get_create_token_data('test', 'test')
+        tx.resolve()
+        tx.verify()
 
 
 if __name__ == '__main__':

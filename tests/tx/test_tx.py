@@ -542,6 +542,31 @@ class BasicTransaction(unittest.TestCase):
         tx2.update_hash()
         assert tx == tx2
 
+    def test_tx_data(self):
+        # The only tx that accept something in data field is the create token tx
+        parents = [tx.hash for tx in self.genesis_txs]
+        genesis_block = self.genesis_blocks[0]
+
+        value = genesis_block.outputs[0].value
+        address = get_address_from_public_key(self.genesis_public_key)
+        script = P2PKH.create_output_script(address)
+        output = TxOutput(value, script)
+
+        _input = TxInput(genesis_block.hash, 0, b'')
+        tx = Transaction(weight=1, inputs=[_input], outputs=[output], parents=parents, storage=self.tx_storage)
+
+        data_to_sign = tx.get_sighash_all(clear_input_data=True)
+        public_bytes, signature = self.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
+        _input.data = P2PKH.create_input_data(public_bytes, signature)
+
+        tx.resolve()
+        tx.verify()
+
+        tx.data = b'abc'
+        tx.resolve()
+        with self.assertRaises(TransactionDataError):
+            tx.verify()
+
 
 if __name__ == '__main__':
     unittest.main()
