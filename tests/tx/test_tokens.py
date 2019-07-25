@@ -3,7 +3,7 @@ from hathor.transaction import Block, Transaction, TxInput, TxOutput
 from hathor.transaction.exceptions import BlockWithTokensError, InputOutputMismatch, InvalidToken
 from hathor.transaction.scripts import P2PKH
 from tests import unittest
-from tests.utils import create_tokens, get_genesis_key
+from tests.utils import create_tokens, get_create_token_data, get_genesis_key
 
 
 class TokenTest(unittest.TestCase):
@@ -104,6 +104,9 @@ class TokenTest(unittest.TestCase):
         data_to_sign = tx.get_sighash_all(clear_input_data=True)
         public_bytes, signature = self.manager.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
         tx.inputs[0].data = P2PKH.create_input_data(public_bytes, signature)
+
+        tx.data = get_create_token_data('test', 'test')
+
         tx.resolve()
         with self.assertRaises(InvalidToken):
             tx.verify()
@@ -125,7 +128,7 @@ class TokenTest(unittest.TestCase):
 
     def test_token_transfer(self):
         wallet = self.manager.wallet
-        tx = create_tokens(self.manager, self.address_b58)
+        tx = create_tokens(self.manager, self.address_b58, name='test', symbol='test')
         token_uid = tx.tokens[0]
         utxo = tx.outputs[0]
 
@@ -156,7 +159,7 @@ class TokenTest(unittest.TestCase):
 
     def test_token_mint(self):
         wallet = self.manager.wallet
-        tx = create_tokens(self.manager, self.address_b58)
+        tx = create_tokens(self.manager, self.address_b58, name='test', symbol='test')
         token_uid = tx.tokens[0]
         parents = self.manager.get_new_tx_parents()
         script = P2PKH.create_output_script(self.address)
@@ -187,7 +190,7 @@ class TokenTest(unittest.TestCase):
 
     def test_token_melt(self):
         wallet = self.manager.wallet
-        tx = create_tokens(self.manager, self.address_b58)
+        tx = create_tokens(self.manager, self.address_b58, name='test', symbol='test')
         token_uid = tx.tokens[0]
         parents = self.manager.get_new_tx_parents()
         script = P2PKH.create_output_script(self.address)
@@ -224,7 +227,7 @@ class TokenTest(unittest.TestCase):
 
     def test_token_transfer_authority(self):
         wallet = self.manager.wallet
-        tx = create_tokens(self.manager, self.address_b58)
+        tx = create_tokens(self.manager, self.address_b58, name='test', symbol='test')
         token_uid = tx.tokens[0]
         parents = self.manager.get_new_tx_parents()
         script = P2PKH.create_output_script(self.address)
@@ -252,6 +255,9 @@ class TokenTest(unittest.TestCase):
         tx3.resolve()
         with self.assertRaises(InvalidToken):
             tx3.verify()
+
+    # def test_create_token_transaction(self):
+        # TODO Validate all tx creation errors
 
 
 if __name__ == '__main__':

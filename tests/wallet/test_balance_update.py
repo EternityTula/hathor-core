@@ -389,7 +389,7 @@ class HathorSyncMethodsTestCase(unittest.TestCase):
         # initial tokens
         address_b58 = self.manager.wallet.get_unused_address()
         address = decode_address(address_b58)
-        tx = create_tokens(self.manager, address_b58)
+        tx = create_tokens(self.manager, address_b58, name='test', symbol='test')
         token_id = tx.tokens[0]
         amount = tx.outputs[0].value
 

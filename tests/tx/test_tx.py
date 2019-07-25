@@ -6,7 +6,6 @@ from hathor.crypto.util import get_address_from_public_key, get_private_key_from
 from hathor.manager import TestMode
 from hathor.transaction import MAX_NUM_INPUTS, MAX_NUM_OUTPUTS, MAX_OUTPUT_VALUE, Block, Transaction, TxInput, TxOutput
 from hathor.transaction.exceptions import (
-    BlockDataError,
     BlockWithInputs,
     ConflictingInputs,
     DuplicatedParents,
@@ -19,6 +18,7 @@ from hathor.transaction.exceptions import (
     TimestampError,
     TooManyInputs,
     TooManyOutputs,
+    TransactionDataError,
 )
 from hathor.transaction.scripts import P2PKH
 from hathor.transaction.storage import TransactionMemoryStorage
@@ -490,7 +490,7 @@ class BasicTransaction(unittest.TestCase):
         add_block_with_data()
         add_block_with_data(b'Testing, testing 1, 2, 3...')
         add_block_with_data(100*b'a')
-        with self.assertRaises(BlockDataError):
+        with self.assertRaises(TransactionDataError):
             add_block_with_data(101*b'a')
 
     def test_output_serialization(self):

@@ -126,7 +126,7 @@ class TwinTxTest(unittest.TestCase):
         # Last element is always empty string
         output.pop()
 
-        human = output[0].replace("'", '"')
+        human = output[0].replace("'", '"').replace('None', 'null')
         tx_data = json.loads(human)
 
         self.assertTrue(isinstance(tx_data, dict))

@@ -182,7 +182,7 @@ class BasicWallet(unittest.TestCase):
 
     def test_create_token_transaction(self):
         add_new_block(self.manager, advance_clock=5)
-        tx = create_tokens(self.manager)
+        tx = create_tokens(self.manager, name='test', symbol='test')
 
         tokens_created = tx.outputs[0].value
         token_uid = tx.tokens[0]
