@@ -170,7 +170,7 @@ class Transaction(BaseTransaction):
                 raise TransactionDataError('Token name limit is {} characters'.format(settings.MAX_TOKEN_NAME))
 
             if len(data['symbol']) > settings.MAX_TOKEN_SYMBOL:
-                raise TransactionDataError('Token symbol limit is {} characters'.format(settings.MAX_TOKEN_NAME))
+                raise TransactionDataError('Token symbol limit is {} characters'.format(settings.MAX_TOKEN_SYMBOL))
 
         else:
             if len(self.data) > 0:
@@ -196,7 +196,7 @@ class Transaction(BaseTransaction):
             (symbol_size,), buf = unpack('!B', buf)
             symbol, buf = unpack_len(symbol_size, buf)
 
-            return {'name': name, 'symbol': symbol}
+            return {'name': name.decode('utf-8'), 'symbol': symbol.decode('utf-8')}
         except StructError:
             raise TransactionDataError('Invalid data field struct')
 
