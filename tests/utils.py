@@ -22,6 +22,7 @@ from hathor.transaction.storage import (
     TransactionRemoteStorage,
     create_transaction_storage_server,
 )
+from hathor.transaction.util import int_to_bytes
 
 settings = HathorSettings()
 
@@ -545,7 +546,23 @@ def get_genesis_key():
     return get_private_key_from_bytes(private_key_bytes)
 
 
-def create_tokens(manager: 'HathorManager', address_b58: str = None, genesis_index: int = 0):
+def get_create_token_data(name: str, symbol: str) -> bytes:
+    """ Generates tx data field from token name and symbol
+    """
+    data = b''
+
+    name_bytes = name.encode('utf-8')
+    data += int_to_bytes(len(name_bytes), 1)
+    data += name_bytes
+
+    symbol_bytes = symbol.encode('utf-8')
+    data += int_to_bytes(len(symbol_bytes), 1)
+    data += symbol_bytes
+    return data
+
+
+def create_tokens(manager: 'HathorManager', address_b58: str = None, genesis_index: int = 0,
+                  name: str = '', symbol: str = ''):
     """Creates a new token and propagates a tx with the following UTXOs:
     1. some tokens (already mint some tokens so they can be transferred);
     2. mint authority;
@@ -587,6 +604,8 @@ def create_tokens(manager: 'HathorManager', address_b58: str = None, genesis_ind
 
     # finish and propagate tx
     tx.outputs = [token_output]
+
+    tx.data = get_create_token_data(name, symbol)
     tx.resolve()
     tx.verify()
     manager.propagate_tx(tx, fails_silently=False)
