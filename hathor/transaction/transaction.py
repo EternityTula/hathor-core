@@ -160,9 +160,9 @@ class Transaction(BaseTransaction):
             # token creation tx must have 1 output only and no inputs
             if output.is_token_creation():
                 if len(self.outputs) != 1:
-                    raise InvalidToken('Creation tx must have 1 output')
+                    raise InvalidToken('Token creation tx must have 1 output and has {}'.format(len(self.outputs)))
                 if len(self.inputs) != 0:
-                    raise InvalidToken('Creation tx must have no inputs')
+                    raise InvalidToken('Token creation tx must have no inputs and has {}'.format(len(self.inputs)))
 
     def verify_sum(self) -> None:
         """Verify that the sum of outputs is equal of the sum of inputs, for each token.
