@@ -4,7 +4,7 @@ import random
 import sys
 import time
 from enum import Enum, IntFlag
-from math import log
+from math import log, isnan
 from typing import Any, List, Optional, cast
 
 from twisted.internet import defer
@@ -474,6 +474,14 @@ class HathorManager:
                     'New transaction tag=new_tx hash={tx.hash_hex}'
                     ' timestamp={tx.timestamp} datetime={ts_date} from_now={time_from_now}', tx=tx, ts_date=ts_date,
                     time_from_now=tx.get_time_from_now())
+
+        # XXX This MUST NEVER be merged to dev. It is a workaround to keep testnet-bravo running while
+        # XXX testnet-charlie has not been launched.
+        if isnan(tx.weight):
+            tx.weight = self.minimum_tx_weight(tx)
+            meta = tx.get_metadata()
+            if isnan(meta.accumulated_weight):
+                meta.accumulated_weight = tx.weight
 
         if tx.is_block:
             assert isinstance(tx, Block)

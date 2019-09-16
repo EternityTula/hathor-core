@@ -471,7 +471,7 @@ class BaseTransactionStorage(TransactionStorage):
         # This `for` is for assert only. How to skip it when running with `-O` parameter?
         for interval in tips:
             meta = self.get_metadata(interval.data)
-            assert not meta.voided_by
+            assert not meta.voided_by, interval.data.hex()
 
         return tips
 
