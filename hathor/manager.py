@@ -460,8 +460,6 @@ class HathorManager:
         if self.wallet:
             self.wallet.on_new_tx(tx)
 
-        tx.update_parents()
-
         if not quiet:
             ts_date = datetime.datetime.fromtimestamp(tx.timestamp)
             if tx.is_block:
@@ -475,14 +473,20 @@ class HathorManager:
                     ' timestamp={tx.timestamp} datetime={ts_date} from_now={time_from_now}', tx=tx, ts_date=ts_date,
                     time_from_now=tx.get_time_from_now())
 
-        if tx.is_block:
-            assert isinstance(tx, Block)
-            tx.update_voided_info()
-        else:
-            assert isinstance(tx, Transaction)
-            tx.mark_inputs_as_used()
-            tx.update_voided_info()
-            tx.set_conflict_twins()
+        try:
+            tx.update_parents()
+            if tx.is_block:
+                assert isinstance(tx, Block)
+                tx.update_voided_info()
+            else:
+                assert isinstance(tx, Transaction)
+                tx.mark_inputs_as_used()
+                tx.update_voided_info()
+                tx.set_conflict_twins()
+        except:
+            # TODO Set status as UNKNOWN_EXCEPTION.
+            self.tx_storage._del_from_cache(tx)
+            raise
 
         if propagate_to_peers:
             # Propagate to our peers.
