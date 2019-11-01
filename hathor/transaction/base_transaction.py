@@ -289,6 +289,12 @@ class BaseTransaction(ABC):
             raise WeightError
         return 2**(256 - (override_weight or self.weight)) - 1
 
+    def get_difficulty(self) -> int:
+        """Return the real/linear difficulty: proportional to number of hashes needed to find a solution."""
+        if not isfinite(self.weight):
+            raise WeightError
+        return int(2**self.weight)
+
     def get_time_from_now(self, now: Optional[Any] = None) -> str:
         """ Return a the time difference between now and the tx's timestamp
 

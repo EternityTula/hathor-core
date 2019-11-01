@@ -1,7 +1,7 @@
 import warnings
 from enum import Enum
 from functools import partial, wraps
-from typing import Any, Callable, Dict, Iterator, cast
+from typing import Any, Callable, Dict, Iterator, List, cast
 
 from twisted.internet.defer import succeed
 from twisted.internet.interfaces import IReactorCore
@@ -140,3 +140,9 @@ class classproperty:
 
     def __get__(self, obj, owner):
         return self.f(owner)
+
+
+def lwma(items: List[float]) -> float:
+    """Linearly Weighted Moving Average, later items have higher weight."""
+    n = len(items)
+    return sum((i + 1) * j for i, j in enumerate(items)) * 2 / (n * (n + 1))

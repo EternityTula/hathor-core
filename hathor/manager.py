@@ -25,6 +25,7 @@ from hathor.transaction import BaseTransaction, Block, MergeMinedBlock, TxOutput
 from hathor.transaction.exceptions import TxValidationError
 from hathor.transaction.storage import TransactionStorage
 from hathor.wallet import BaseWallet
+from hathor.util import lwma
 
 settings = HathorSettings()
 logger = get_logger()
@@ -262,8 +263,8 @@ class HathorManager:
                 assert self.on_new_tx(tx, quiet=True, fails_silently=False)
             except (InvalidNewTransaction, TxValidationError):
                 pretty_json = json.dumps(tx.to_json(), indent=4)
-                self.log.failure('An unexpected error occurred when initializing {tx.hash_hex}\n'
-                                 '{pretty_json}', tx=tx, pretty_json=pretty_json)
+                self.log.error('An unexpected error occurred when initializing {tx.hash_hex}\n'
+                               '{pretty_json}', tx=tx, pretty_json=pretty_json)
                 sys.exit(-1)
 
             if time.time() - t2 > 1:
@@ -498,7 +499,7 @@ class HathorManager:
 
         return True
 
-    def calculate_block_difficulty(self, block: Block) -> float:
+    def calculate_block_difficulty(self, block: Block, window_size: int = settings.BLOCK_DIFFICULTY_N_BLOCKS) -> float:
         """ Calculate block difficulty according to the ascendents of `block`.
 
         The new difficulty is calculated so that the average time between blocks will be
@@ -549,6 +550,39 @@ class HathorManager:
             weight = self.min_block_weight
 
         return weight
+
+
+        # In test mode we don't validate the block difficulty
+        if self.test_mode & TestMode.TEST_BLOCK_WEIGHT:
+            return 1
+
+        if block.is_genesis:
+            return self.min_block_weight
+
+        timestamps: List[int] = []
+        cumulative_difficulties: List[int] = []
+
+        # ---
+        # adapted from Masari:
+        # - https://github.com/masari-project/masari/blob/master/src/cryptonote_basic/difficulty.cpp#L369-L426
+
+        T = self.avg_time_between_blocks  # masari/cryptonote: DIFFICULTY_TARGET = 60 // seconds
+        N = window_size                   # masari/cryptonote: DIFFICULTY_WINDOW = 720 // blocks
+        FTL = 300                         # masari/cryptonote: BLOCK_FUTURE_TIME_LIMIT = DIFFICULTY_TARGET * 5
+        PTL = 300                         # masari/cryptonote: BLOCK_PAST_TIME_LIMIT = DIFFICULTY_TARGET * 5
+
+        root = block
+        while len(timestamps) < N + 1:
+            if not root.parents:
+                assert root.is_genesis
+                break
+            root = root.get_block_parent()
+            assert isinstance(root, Block)
+            timestamps.insert(0, root.timestamp)
+            diff = block.get_difficulty()
+            prev_diff = cumulative_difficulties[0] if cumulative_difficulties else 0
+            cumulative_difficulties.insert(0, prev_diff + diff)
+
 
     def minimum_tx_weight(self, tx: BaseTransaction) -> float:
         """ Returns the minimum weight for the param tx

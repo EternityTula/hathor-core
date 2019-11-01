@@ -54,7 +54,7 @@ class HathorSettings(NamedTuple):
 
     # Number of blocks to be found with the same hash algorithm as `block`.
     # The bigger it is, the smaller the variance of the hash rate estimator is.
-    BLOCK_DIFFICULTY_N_BLOCKS: int = 20
+    BLOCK_DIFFICULTY_N_BLOCKS: int = 134  # best guess formula: N=int(50*(600/T)^0.33)
 
     # Maximum change in difficulty between consecutive blocks.
     #
