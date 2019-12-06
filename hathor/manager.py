@@ -39,7 +39,7 @@ from hathor.p2p.peer_id import PeerId
 from hathor.p2p.protocol import HathorProtocol
 from hathor.pubsub import HathorEvents, PubSubManager
 from hathor.stratum import StratumFactory
-from hathor.transaction import BaseTransaction, Block, MergeMinedBlock, TxOutput, sum_weights
+from hathor.transaction import BaseTransaction, Block, MergeMinedBlock, TxOutput
 from hathor.transaction.exceptions import TxValidationError
 from hathor.transaction.storage import TransactionStorage
 from hathor.wallet import BaseWallet
@@ -549,37 +549,68 @@ class HathorManager:
         if block.is_genesis:
             return self.min_block_weight
 
-        blocks: List[Block] = []
         root = block
-        while len(blocks) < settings.BLOCK_DIFFICULTY_N_BLOCKS:
+        N = min(settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_metadata().height)
+        K = N // 2
+        T = self.avg_time_between_blocks
+        S = 5
+        if N < 10:
+            return self.min_block_weight
+
+        blocks: List[Block] = []
+        while len(blocks) < N:
             if not root.parents:
                 assert root.is_genesis
                 break
             root = root.get_block_parent()
             assert isinstance(root, Block)
             blocks.append(root)
+        # XXX: this shouldn't be necessary
         blocks.sort(key=lambda tx: tx.timestamp)
 
-        if blocks[-1].is_genesis:
-            return self.min_block_weight
+        # XXX: consider adding "solvetime" to metadata
+        solvetimes_and_weights = (
+            (block.timestamp - prev_block.timestamp, block.weight)
+            for block, prev_block in zip(blocks[1:], blocks[:-1])
+        )
+        solvetimes, weights = zip(*solvetimes_and_weights)
 
-        dt = blocks[-1].timestamp - blocks[0].timestamp
-        assert dt > 0
+        sum_diffs = 0.0
+        sum_solvetimes = 0.0
 
-        logH = 0.0
-        for blk in blocks:
-            logH = sum_weights(logH, blk.weight)
+        prefix_sum_solvetimes = [0]
+        for x in solvetimes:
+            prefix_sum_solvetimes.append(prefix_sum_solvetimes[-1] + x)
 
-        weight = logH - log(dt, 2) + log(self.avg_time_between_blocks, 2)
+        # Loop through N most recent blocks. N is most recently solved block.
+        for i in range(K, N):
+            solvetime = solvetimes[i]
+            weight = weights[i]
+
+            # x = sum(solvetimes[i - K:i + 1]) / K
+            # assert sum(solvetimes[i - K:i + 1]) == prefix_sum_solvetimes[i + 1] - prefix_sum_solvetimes[i - K]
+            x = (prefix_sum_solvetimes[i + 1] - prefix_sum_solvetimes[i - K]) / K
+
+            ki = K * (x - T)**2 / (2 * T * T)
+            ki = max(1, ki / S)
+            # if self.debug and ki > 1:
+            #     print('outlier!!!', i, ki, x)  # solvetime, weight, i)
+            # ki = i - K + 2
+            sum_diffs += ki * int(2**weight)
+            sum_solvetimes += ki * solvetime
+
+        weight = log(sum_diffs, 2) - log(sum_solvetimes, 2) + log(T, 2)
 
         # Apply a maximum change in difficulty.
         max_dw = settings.BLOCK_DIFFICULTY_MAX_DW
-        dw = weight - blocks[-1].weight
-        if dw > max_dw:
-            weight = blocks[-1].weight + max_dw
-        elif dw < -max_dw:
-            weight = blocks[-1].weight - max_dw
+        if max_dw is not None:
+            dw = weight - blocks[-1].weight
+            if dw > max_dw:
+                weight = blocks[-1].weight + max_dw
+            elif dw < -max_dw:
+                weight = blocks[-1].weight - max_dw
 
+        # Apply minimum weight
         if weight < self.min_block_weight:
             weight = self.min_block_weight
 
