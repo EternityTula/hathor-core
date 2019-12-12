@@ -33,14 +33,24 @@ class TestCase(unittest.TestCase):
         5. replace block nonce and hash on this function with the new ones
         """
         import hathor.transaction.genesis
-        from hathor.transaction import Block
+        from hathor.transaction import Block, Transaction
         block = hathor.transaction.genesis.GENESIS[0]
-        assert isinstance(block, Block)
+        self.assertIsInstance(block, Block)
         block.outputs[0].script = bytes.fromhex('76a914fd05059b6006249543b82f36876a17c73fd2267b88ac')
         block.resolve(update_time=False)
-        block.nonce = 1438257
+        block.nonce = 0
         block.update_hash()
-        assert block.hash_hex == '00000087afe53259732782269fb62243ad52b669728394d492b1e84c259fb85c'
+        self.assertEqual(block.hash_hex, '6b338deb966e95471786e79b1c731638695e8ed0712736ed9b0ae83710f466fb')
+        tx1 = hathor.transaction.genesis.GENESIS[1]
+        self.assertIsInstance(tx1, Transaction)
+        tx1.nonce = 0
+        tx1.update_hash()
+        self.assertEqual(tx1.hash_hex, '2a20321121a1dd805b75cf956673a840175076352742f52b7341a31a13404ea9')
+        tx2 = hathor.transaction.genesis.GENESIS[2]
+        self.assertIsInstance(tx2, Transaction)
+        tx2.nonce = 5
+        tx2.update_hash()
+        self.assertEqual(tx2.hash_hex, '08b1a77129b2755a2dbdd4ea74a09b3bd3fa6c3b5c1abbbe95d5f69751928ed3')
 
     def tearDown(self):
         self.clean_tmpdirs()
