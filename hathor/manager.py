@@ -550,7 +550,7 @@ class HathorManager:
             return self.min_block_weight
 
         root = block
-        N = min(settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_metadata().height)
+        N = min(settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_block_parent().get_metadata().height + 1)
         K = N // 2
         T = self.avg_time_between_blocks
         S = 5
