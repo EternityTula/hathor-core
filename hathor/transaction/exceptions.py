@@ -96,6 +96,10 @@ class TransactionDataError(TxValidationError):
     """Block data max length exceeded"""
 
 
+class RewardLocked(TxValidationError):
+    """Input data does not solve output script correctly"""
+
+
 class BlockWithInputs(BlockError):
     """Block has inputs"""
 
