@@ -38,19 +38,19 @@ class TestCase(unittest.TestCase):
         self.assertIsInstance(block, Block)
         block.outputs[0].script = bytes.fromhex('76a914fd05059b6006249543b82f36876a17c73fd2267b88ac')
         block.resolve(update_time=False)
-        block.nonce = 0
+        block.nonce = 4
         block.update_hash()
-        self.assertEqual(block.hash_hex, '6b338deb966e95471786e79b1c731638695e8ed0712736ed9b0ae83710f466fb')
+        self.assertEqual(block.hash_hex, '3807c0d4e61cedea86839a53644b0de6d61e4f08eb24281b20dd3ab4c63591a7')
         tx1 = hathor.transaction.genesis.GENESIS[1]
         self.assertIsInstance(tx1, Transaction)
-        tx1.nonce = 0
+        tx1.nonce = 6
         tx1.update_hash()
-        self.assertEqual(tx1.hash_hex, '2a20321121a1dd805b75cf956673a840175076352742f52b7341a31a13404ea9')
+        self.assertEqual(tx1.hash_hex, '16ba3dbe424c443e571b00840ca54b9ff4cff467e10b6a15536e718e2008f952')
         tx2 = hathor.transaction.genesis.GENESIS[2]
         self.assertIsInstance(tx2, Transaction)
-        tx2.nonce = 5
+        tx2.nonce = 2
         tx2.update_hash()
-        self.assertEqual(tx2.hash_hex, '08b1a77129b2755a2dbdd4ea74a09b3bd3fa6c3b5c1abbbe95d5f69751928ed3')
+        self.assertEqual(tx2.hash_hex, '33e14cb555a96967841dcbe0f95e9eab5810481d01de8f4f73afb8cce365e869')
 
     def tearDown(self):
         self.clean_tmpdirs()
