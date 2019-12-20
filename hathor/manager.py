@@ -601,15 +601,6 @@ class HathorManager:
 
         weight = log(sum_diffs, 2) - log(sum_solvetimes, 2) + log(T, 2)
 
-        # Apply a maximum change in difficulty.
-        max_dw = settings.BLOCK_DIFFICULTY_MAX_DW
-        if max_dw is not None:
-            dw = weight - blocks[-1].weight
-            if dw > max_dw:
-                weight = blocks[-1].weight + max_dw
-            elif dw < -max_dw:
-                weight = blocks[-1].weight - max_dw
-
         # Apply minimum weight
         if weight < self.min_block_weight:
             weight = self.min_block_weight
