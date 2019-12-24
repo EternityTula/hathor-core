@@ -95,7 +95,7 @@ def _re_pushdata(length: int) -> bytes:
     :return: A non-compiled regular expression
     :rtype: bytes
     """
-    ret = [b'.{', str(length + 1).encode('ascii'), b'}']
+    ret = [bytes([length]), b'.{', str(length).encode('ascii'), b'}']
 
     if length > 75:
         ret.insert(0, bytes([Opcode.OP_PUSHDATA1]))
@@ -128,7 +128,7 @@ class Opcode(IntEnum):
     OP_HASH160 = 0xA9
     OP_PUSHDATA1 = 0x4C
     OP_GREATERTHAN_TIMESTAMP = 0x6F
-    OP_CHECKMULTISIG = 0xae
+    OP_CHECKMULTISIG = 0xAE
     OP_CHECKDATASIG = 0xBA
     OP_DATA_STREQUAL = 0xC0
     OP_DATA_GREATERTHAN = 0xC1
@@ -461,7 +461,7 @@ class NanoContractMatchValues:
         s.addOpcode(Opcode.OP_DATA_STREQUAL)
         # compare second value from data with min_timestamp
         s.addOpcode(Opcode.OP_1)
-        s.pushData(self.min_timestamp)
+        s.pushData(struct.pack('!I', self.min_timestamp))
         s.addOpcode(Opcode.OP_DATA_GREATERTHAN)
         # finally, compare third value with values on dict
         s.addOpcode(Opcode.OP_2)

@@ -82,6 +82,26 @@ class BasicTransaction(unittest.TestCase):
         match = re_match.search(s.data[1:])
         self.assertIsNone(match)
 
+        # DATA_ between other opcodes
+        s = HathorScript()
+        re_match = re_compile('^OP_HASH160 (DATA_20) OP_EQUALVERIFY$')
+        data = [0x00] * 20
+        s.addOpcode(Opcode.OP_HASH160)
+        s.pushData(bytes(data))
+        s.addOpcode(Opcode.OP_EQUALVERIFY)
+        match = re_match.search(s.data)
+        self.assertIsNotNone(match)
+
+        # wrong length
+        s = HathorScript()
+        re_match = re_compile('^DATA_20$')
+        data = [0x00] * 20
+        s.pushData(bytes(data))
+        s.data = s.data.replace(b'\x14', b'\x15')
+        print(s.data)
+        match = re_match.search(s.data)
+        self.assertIsNone(match)
+
     def test_push_integers(self):
         # 1 byte
         s = HathorScript()
