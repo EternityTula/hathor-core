@@ -21,7 +21,9 @@ from hathor.transaction.scripts import (
     HathorScript,
     Opcode,
     ScriptExtras,
+    binary_to_int,
     get_data_value,
+    get_pushdata,
     op_checkdatasig,
     op_checkmultisig,
     op_checksig,
@@ -79,6 +81,35 @@ class BasicTransaction(unittest.TestCase):
         # test without PUSHDATA1 opcode. Should fail
         match = re_match.search(s.data[1:])
         self.assertIsNone(match)
+
+    def test_push_integers(self):
+        # 1 byte
+        s = HathorScript()
+        s.pushData(255)
+        n = get_pushdata(s.data)
+        self.assertEqual(1, len(n))
+        self.assertEqual(255, binary_to_int(n))
+
+        # 2 bytes
+        s = HathorScript()
+        s.pushData(65535)
+        n = get_pushdata(s.data)
+        self.assertEqual(2, len(n))
+        self.assertEqual(65535, binary_to_int(n))
+
+        # 4 bytes
+        s = HathorScript()
+        s.pushData(4294967295)
+        n = get_pushdata(s.data)
+        self.assertEqual(4, len(n))
+        self.assertEqual(4294967295, binary_to_int(n))
+
+        # 8 bytes
+        s = HathorScript()
+        s.pushData(4294967296)
+        n = get_pushdata(s.data)
+        self.assertEqual(8, len(n))
+        self.assertEqual(4294967296, binary_to_int(n))
 
     def test_pushdata(self):
         stack = []

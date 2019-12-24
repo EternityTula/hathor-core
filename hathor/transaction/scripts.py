@@ -742,7 +742,7 @@ def binary_to_int(binary: bytes) -> int:
     elif len(binary) == 4:
         _format = '!I'
     elif len(binary) == 8:
-        _format == '!L'
+        _format = '!Q'
     else:
         raise struct.error
 
