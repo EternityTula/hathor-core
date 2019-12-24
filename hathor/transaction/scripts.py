@@ -99,19 +99,10 @@ def _re_pushdata(length: int) -> bytes:
     :return: A non-compiled regular expression
     :rtype: bytes
     """
-    p1 = [bytes([Opcode.OP_PUSHDATA1]), b'.{', str(length + 1).encode('ascii'), b'}']
+    ret = [b'.{', str(length + 1).encode('ascii'), b'}']
 
-    if length >= 75:
-        ret = p1
-    else:
-        p2 = [b'[\0-\75].{', str(length).encode('ascii'), b'}']
-        ret = [
-            b'(?:(?:',
-            b''.join(p1),
-            b')|(?:',
-            b''.join(p2),
-            b'))',
-        ]
+    if length > 75:
+        ret.insert(0, bytes([Opcode.OP_PUSHDATA1]))
 
     return b''.join(ret)
 
@@ -372,11 +363,7 @@ class MultiSig:
             if pushdata_timelock:
                 timelock_bytes = pushdata_timelock[1:]
                 timelock = struct.unpack('!I', timelock_bytes)[0]
-            pushdata_address = groups[1]
-            if pushdata_address[0] > 75:
-                redeem_script_hash = pushdata_address[2:]
-            else:
-                redeem_script_hash = pushdata_address[1:]
+            redeem_script_hash = get_pushdata(groups[1])
             address_b58 = get_address_b58_from_redeem_script_hash(redeem_script_hash)
             return cls(address_b58, timelock)
         return None
@@ -478,7 +465,7 @@ class NanoContractMatchValues:
         s.addOpcode(Opcode.OP_DATA_STREQUAL)
         # compare second value from data with min_timestamp
         s.addOpcode(Opcode.OP_1)
-        s.pushData(struct.pack('!I', self.min_timestamp))
+        s.pushData(self.min_timestamp)
         s.addOpcode(Opcode.OP_DATA_GREATERTHAN)
         # finally, compare third value with values on dict
         s.addOpcode(Opcode.OP_2)

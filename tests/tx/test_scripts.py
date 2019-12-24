@@ -38,6 +38,7 @@ from hathor.transaction.scripts import (
     op_integer,
     op_pushdata,
     op_pushdata1,
+    re_compile,
 )
 from hathor.wallet import HDWallet
 from tests import unittest
@@ -53,6 +54,31 @@ class BasicTransaction(unittest.TestCase):
         # read genesis keys
         self.genesis_private_key = get_genesis_key()
         self.genesis_public_key = self.genesis_private_key.public_key()
+
+    def test_data_pattern(self):
+        # up to 75 bytes, no Opcode is needed
+        s = HathorScript()
+        re_match = re_compile('^DATA_75$')
+        data = [0x00] * 75
+        s.pushData(bytes(data))
+        self.assertEqual(76, len(s.data))   # data_len + data
+        match = re_match.search(s.data)
+        self.assertIsNotNone(match)
+        # test with PUSHDATA1 opcode. Should fail
+        match = re_match.search(bytes(Opcode.OP_PUSHDATA1) + s.data)
+        self.assertIsNone(match)
+
+        # with more, use OP_PUSHDATA1
+        s = HathorScript()
+        re_match = re_compile('^DATA_76$')
+        data = [0x00] * 76
+        s.pushData(bytes(data))
+        self.assertEqual(78, len(s.data))   # OP_PUSHDATA1 + data_len + data
+        match = re_match.search(s.data)
+        self.assertIsNotNone(match)
+        # test without PUSHDATA1 opcode. Should fail
+        match = re_match.search(s.data[1:])
+        self.assertIsNone(match)
 
     def test_pushdata(self):
         stack = []
