@@ -57,9 +57,8 @@ def re_compile(pattern: str) -> Pattern[bytes]:
     special symbols:
       (i) OP_DUP, OP_HASH160, and all other opcodes;
      (ii) DATA_<length>: data with the specified length;
-    (iii) INT_<number>: the integer number (eg INT_3 means the number 3);
-     (iv) NUMBER: a 4-byte integer;
-      (v) BLOCK: a variable length block, to be parsed later
+    (iii) NUMBER: a 4-byte integer;
+     (iv) BLOCK: a variable length block, to be parsed later
 
     Example:
     >>> r = re_compile(
@@ -78,9 +77,6 @@ def re_compile(pattern: str) -> Pattern[bytes]:
         elif x.startswith('DATA_'):
             length = int(m.group()[5:])
             return _re_pushdata(length)
-        elif x.startswith('INT_'):
-            number = int(m.group()[4:])
-            return b'.{1}' + bytes([number])
         elif x.startswith('NUMBER'):
             return b'.{5}'
         elif x.startswith('BLOCK'):
