@@ -643,9 +643,18 @@ def execute_eval(data: bytes, log: List[str], extras: ScriptExtras) -> None:
         fn(stack, log, extras)
         pos += 1
 
+    evaluate_final_stack(stack, log)
+
+
+def evaluate_final_stack(stack: Stack, log: List[str]) -> None:
+    """ Checks the final state of the stack. It's valid if:
+          1. it's empty
+          2. top item on stack is True (non zero value)
+    """
     if len(stack) > 0:
-        if stack.pop() != 1:
-            # stack left with non zero value
+        if stack.pop() == 0:
+            # stack left with False value
+            log.append('Stack left with False value')
             raise FinalStackInvalid('\n'.join(log))
 
 

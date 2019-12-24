@@ -7,6 +7,7 @@ from hathor.crypto.util import get_address_from_public_key, get_hash160, get_pub
 from hathor.transaction.exceptions import (
     DataIndexError,
     EqualVerifyFailed,
+    FinalStackInvalid,
     InvalidStackData,
     MissingStackItems,
     OracleChecksigFailed,
@@ -22,6 +23,7 @@ from hathor.transaction.scripts import (
     Opcode,
     ScriptExtras,
     binary_to_int,
+    evaluate_final_stack,
     get_data_value,
     get_pushdata,
     op_checkdatasig,
@@ -581,6 +583,29 @@ class BasicTransaction(unittest.TestCase):
 
         with self.assertRaises(ScriptError):
             op_integer(0x61, stack, [], None)
+
+    def test_final_stack(self):
+        # empty stack is valid
+        stack = []
+        evaluate_final_stack(stack, [])
+
+        # True (no zero value) in final stack is valid
+        stack = [1]
+        evaluate_final_stack(stack, [])
+        stack = [5]
+        evaluate_final_stack(stack, [])
+
+        # more than one item is valid, as long as top value is True
+        stack = [0, 0, 1]
+        evaluate_final_stack(stack, [])
+
+        # False on stack should fail
+        stack = [0]
+        with self.assertRaises(FinalStackInvalid):
+            evaluate_final_stack(stack, [])
+        stack = [1, 1, 1, 0]
+        with self.assertRaises(FinalStackInvalid):
+            evaluate_final_stack(stack, [])
 
 
 if __name__ == '__main__':
