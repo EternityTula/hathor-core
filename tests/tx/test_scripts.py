@@ -617,5 +617,6 @@ class BasicTransaction(unittest.TestCase):
         s.insert(0, Opcode.OP_PUSHDATA1)
         self.assertEqual(100, len(get_pushdata(s)))
 
+
 if __name__ == '__main__':
     unittest.main()
