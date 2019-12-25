@@ -607,6 +607,15 @@ class BasicTransaction(unittest.TestCase):
         with self.assertRaises(FinalStackInvalid):
             evaluate_final_stack(stack, [])
 
+    def test_get_pushdata(self):
+        s = [0] * 10
+        s.insert(0, len(s))
+        self.assertEqual(10, len(get_pushdata(s)))
+
+        s = [0] * 100
+        s.insert(0, len(s))
+        s.insert(0, Opcode.OP_PUSHDATA1)
+        self.assertEqual(100, len(get_pushdata(s)))
 
 if __name__ == '__main__':
     unittest.main()

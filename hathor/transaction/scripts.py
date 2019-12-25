@@ -692,9 +692,12 @@ def script_eval(tx: Transaction, txin: TxInput, spent_tx: BaseTransaction) -> No
 
 def get_pushdata(data: bytes) -> bytes:
     if data[0] > 75:
-        return data[2:]
+        length = data[1]
+        start = 2
     else:
-        return data[1:]
+        length = data[0]
+        start = 1
+    return data[start:(start + length)]
 
 
 def get_data_value(k: int, data: bytes) -> bytes:
