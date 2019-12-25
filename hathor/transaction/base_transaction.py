@@ -336,12 +336,6 @@ class BaseTransaction(ABC):
                     return True
             return False
 
-    @abstractclassmethod
-    def update_consensus(self) -> None:
-        """This method is called when a vertex is added to the DAG, and it is responsible for running
-        the consensus algorithm and decide whether the vertex is voided or not."""
-        raise NotImplementedError
-
     @abstractmethod
     def get_funds_fields_from_struct(self, buf: bytes) -> bytes:
         raise NotImplementedError
@@ -691,28 +685,16 @@ class BaseTransaction(ABC):
         # as a pre-calculated value. Then, during the next DFS, if `cur + tx.acc_weight > stop_value`,
         # we might stop and avoid some visits. Question: how would we do it in the BFS?
 
-        # We can walk by the blocks first, because they have higher weight and this may
-        # reduce the number of visits in the BFS.
+        # TODO We can walk by the blocks first, because they have higher weight and this may
+        # reduce the number of visits in the BFS. We need to specially handle when a transaction is not
+        # directly verified by a block.
+
         from hathor.transaction.storage.traversal import BFSWalk
         bfs_walk = BFSWalk(self.storage, is_dag_funds=True, is_dag_verifications=True, is_left_to_right=True)
         for tx in bfs_walk.run(self, skip_root=True):
-            if not tx.is_block:
-                bfs_walk.skip_neighbors(tx)
-                continue
             accumulated_weight = sum_weights(accumulated_weight, tx.weight)
             if accumulated_weight > stop_value:
                 break
-
-        if accumulated_weight <= stop_value + settings.WEIGHT_TOL:
-            # If we are still below stop_value, then we go through the transactions.
-            bfs_walk = BFSWalk(self.storage, is_dag_funds=True, is_dag_verifications=True, is_left_to_right=True)
-            for tx in bfs_walk.run(self, skip_root=True):
-                if tx.is_block:
-                    bfs_walk.skip_neighbors(tx)
-                    continue
-                accumulated_weight = sum_weights(accumulated_weight, tx.weight)
-                if accumulated_weight > stop_value:
-                    break
 
         metadata.accumulated_weight = accumulated_weight
         if save_file:
@@ -720,8 +702,10 @@ class BaseTransaction(ABC):
 
         return metadata
 
-    def update_parents(self) -> None:
-        """Update the tx's parents to add the current tx as their child.
+    def update_initial_metadata(self) -> None:
+        """Update the tx's initial metadata. It does not update the whole metadata.
+
+        It is called when a new transaction/block is received by HathorManager.
 
         :rtype None
         """
