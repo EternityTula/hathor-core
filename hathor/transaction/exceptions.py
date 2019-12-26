@@ -97,7 +97,7 @@ class TransactionDataError(TxValidationError):
 
 
 class RewardLocked(TxValidationError):
-    """Input data does not solve output script correctly"""
+    """Block reward cannot be spent yet, needs more confirmations"""
 
 
 class BlockWithInputs(BlockError):
