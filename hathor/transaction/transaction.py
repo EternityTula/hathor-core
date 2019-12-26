@@ -409,7 +409,7 @@ class Transaction(BaseTransaction):
                 assert spent_tx.hash is not None
                 if spent_tx.is_block:
                     assert isinstance(spent_tx, Block)
-                    self.verify_spent_reward(spent_tx, input_tx)
+                    self.verify_spent_reward(spent_tx)
                 if input_tx.index >= len(spent_tx.outputs):
                     raise InexistentInput('Output spent by this input does not exist: {} index {}'.format(
                         input_tx.tx_id.hex(), input_tx.index))
@@ -433,7 +433,7 @@ class Transaction(BaseTransaction):
                     self.hash_hex, input_tx.tx_id.hex(), input_tx.index))
             spent_outputs.add(key)
 
-    def verify_spent_reward(self, block: Block, input_tx: TxInput) -> None:
+    def verify_spent_reward(self, block: Block) -> None:
         """ Verify that the reward being spent is old enough (has enoughs blocks after it on the best chain).
         """
         assert block.storage is not None
