@@ -536,9 +536,7 @@ class HathorManager:
     def calculate_block_difficulty(self, block: Block) -> float:
         """ Calculate block difficulty according to the ascendents of `block`.
 
-        The new difficulty is calculated so that the average time between blocks will be
-        `self.avg_time_between_blocks`. If the measured time between blocks is smaller than the target,
-        the weight increases. If it is higher than the target, the weight decreases.
+        The algorithm used is described in [RFC 22](https://gitlab.com/HathorNetwork/rfcs/merge_requests/22).
 
         The new difficulty cannot be smaller than `self.min_block_weight`.
         """
