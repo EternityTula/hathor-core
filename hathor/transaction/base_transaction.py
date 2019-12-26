@@ -304,7 +304,7 @@ class BaseTransaction(ABC):
         """Sum of the value of the outputs"""
         return sum(output.value for output in self.outputs if not output.is_token_authority())
 
-    def get_target(self, override_weight: Optional[float] = None) -> float:
+    def get_target(self, override_weight: Optional[float] = None) -> int:
         """Target to be achieved in the mining process"""
         if not isfinite(self.weight):
             raise WeightError
