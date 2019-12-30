@@ -660,6 +660,44 @@ class BasicTransaction(unittest.TestCase):
 
         self.assertEqual(8, tx.sum_outputs)
 
+    def _spend_reward_tx(self, manager, reward_block):
+        value = reward_block.outputs[0].value
+        address = get_address_from_public_key(self.genesis_public_key)
+        script = P2PKH.create_output_script(address)
+        input_ = TxInput(reward_block.hash, 0, b'')
+        output = TxOutput(value, script)
+        tx = Transaction(
+            weight=1,
+            timestamp=int(manager.reactor.seconds()) + 1,
+            inputs=[input_],
+            outputs=[output],
+            parents=manager.get_new_tx_parents(),
+            storage=manager.tx_storage,
+        )
+        data_to_sign = tx.get_sighash_all(clear_input_data=True)
+        public_bytes, signature = self.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
+        input_.data = P2PKH.create_input_data(public_bytes, signature)
+        tx.resolve()
+        return tx
+
+    def test_reward_lock(self):
+        from hathor.transaction.exceptions import RewardLocked
+        network = 'testnet'
+        manager = self.create_peer(network, unlock_wallet=True)
+        # add block with a reward we can spend
+        reward_block = manager.generate_mining_block(address=get_address_from_public_key(self.genesis_public_key))
+        reward_block.resolve()
+        self.assertTrue(manager.propagate_tx(reward_block))
+        # reward cannot be spent while not enough blocks are added
+        for _ in range(settings.REWARD_SPEND_MIN_BLOCKS):
+            tx = self._spend_reward_tx(manager, reward_block)
+            with self.assertRaises(RewardLocked):
+                tx.verify()
+            _blocks = add_new_blocks(manager, 1, advance_clock=1)
+        # now it should be spendable
+        tx = self._spend_reward_tx(manager, reward_block)
+        self.assertTrue(manager.propagate_tx(tx, fails_silently=False))
+
 
 if __name__ == '__main__':
     unittest.main()
