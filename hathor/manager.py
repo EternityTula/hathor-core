@@ -556,20 +556,20 @@ class HathorManager:
             return self.min_block_weight
 
         blocks: List[Block] = []
-        while len(blocks) < N:
+        while len(blocks) < N + 1:
             if not root.parents:
                 assert root.is_genesis
                 break
             root = root.get_block_parent()
             assert isinstance(root, Block)
             blocks.append(root)
-        # XXX: this shouldn't be necessary
-        blocks.sort(key=lambda tx: tx.timestamp)
 
-        # XXX: consider adding "solvetime" to metadata
+        # TODO: revise if this assertion can be safely removed
+        assert blocks == sorted(blocks, key=lambda tx: tx.timestamp)
+
         solvetimes_and_weights = (
             (block.timestamp - prev_block.timestamp, block.weight)
-            for block, prev_block in zip(blocks[1:], blocks[:-1])
+            for block, prev_block in hathor.util.iwindows(blocks, 2)
         )
         solvetimes, weights = zip(*solvetimes_and_weights)
 
@@ -584,16 +584,9 @@ class HathorManager:
         for i in range(K, N):
             solvetime = solvetimes[i]
             weight = weights[i]
-
-            # x = sum(solvetimes[i - K:i + 1]) / K
-            # assert sum(solvetimes[i - K:i + 1]) == prefix_sum_solvetimes[i + 1] - prefix_sum_solvetimes[i - K]
             x = (prefix_sum_solvetimes[i + 1] - prefix_sum_solvetimes[i - K]) / K
-
             ki = K * (x - T)**2 / (2 * T * T)
             ki = max(1, ki / S)
-            # if self.debug and ki > 1:
-            #     print('outlier!!!', i, ki, x)  # solvetime, weight, i)
-            # ki = i - K + 2
             sum_diffs += ki * int(2**weight)
             sum_solvetimes += ki * solvetime
 
