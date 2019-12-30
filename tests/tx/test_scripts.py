@@ -68,9 +68,9 @@ class BasicTransaction(unittest.TestCase):
         self.assertEqual(76, len(s.data))   # data_len + data
         match = re_match.search(s.data)
         self.assertIsNotNone(match)
-        # test with PUSHDATA1 opcode. Should fail
-        match = re_match.search(bytes(Opcode.OP_PUSHDATA1) + s.data)
-        self.assertIsNone(match)
+        # for now, we also accept <= 75 bytes with OP_PUSHDATA1
+        match = re_match.search(bytes([Opcode.OP_PUSHDATA1]) + s.data)
+        self.assertIsNotNone(match)
 
         # with more, use OP_PUSHDATA1
         s = HathorScript()

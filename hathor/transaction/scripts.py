@@ -95,10 +95,11 @@ def _re_pushdata(length: int) -> bytes:
     :return: A non-compiled regular expression
     :rtype: bytes
     """
-    ret = [bytes([length]), b'.{', str(length).encode('ascii'), b'}']
+    ret = [bytes([Opcode.OP_PUSHDATA1]), bytes([length]), b'.{', str(length).encode('ascii'), b'}']
 
-    if length > 75:
-        ret.insert(0, bytes([Opcode.OP_PUSHDATA1]))
+    if length <= 75:
+        # for now, we accept <= 75 bytes with OP_PUSHDATA1. It's optional
+        ret.insert(1, b'?')
 
     return b''.join(ret)
 
