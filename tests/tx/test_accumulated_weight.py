@@ -18,8 +18,8 @@ class AccumulatedWeightTestCase(unittest.TestCase):
         self.assertEqual(len(self.genesis_blocks), 1)
         manager = self.create_peer('testnet', tx_storage=self.tx_storage)
 
-        # Mine 3 blocks in a row with no transaction but the genesis
-        blocks = add_new_blocks(manager, 3, advance_clock=15)
+        # Mine 30 blocks in a row with no transaction but the genesis
+        blocks = add_new_blocks(manager, 30, advance_clock=15)
 
         # Add some transactions between blocks
         tx_list = add_new_transactions(manager, 20, advance_clock=15)
