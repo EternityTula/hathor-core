@@ -39,7 +39,7 @@ from hathor.p2p.peer_id import PeerId
 from hathor.p2p.protocol import HathorProtocol
 from hathor.pubsub import HathorEvents, PubSubManager
 from hathor.stratum import StratumFactory
-from hathor.transaction import BaseTransaction, Block, MergeMinedBlock, TxOutput
+from hathor.transaction import BaseTransaction, Block, MergeMinedBlock, TxOutput, sum_weights
 from hathor.transaction.exceptions import TxValidationError
 from hathor.transaction.storage import TransactionStorage
 from hathor.wallet import BaseWallet
@@ -534,21 +534,21 @@ class HathorManager:
         return True
 
     def calculate_block_difficulty(self, block: Block) -> float:
-        """ Calculate block difficulty according to the ascendents of `block`.
+        """ Calculate block difficulty according to the ascendents of `block`, aka DAA/difficulty adjustment algorithm
 
         The algorithm used is described in [RFC 22](https://gitlab.com/HathorNetwork/rfcs/merge_requests/22).
 
-        The new difficulty cannot be smaller than `self.min_block_weight`.
+        The new difficulty must not be less than `self.min_block_weight`.
         """
         # In test mode we don't validate the block difficulty
         if self.test_mode & TestMode.TEST_BLOCK_WEIGHT:
-            return 1
+            return 1.0
 
         if block.is_genesis:
             return self.min_block_weight
 
         root = block
-        N = min(settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_block_parent().get_metadata().height + 1)
+        N = min(settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_block_parent().get_metadata().height)
         K = N // 2
         T = self.avg_time_between_blocks
         S = 5
@@ -557,24 +557,23 @@ class HathorManager:
 
         blocks: List[Block] = []
         while len(blocks) < N + 1:
-            if not root.parents:
-                assert root.is_genesis
-                break
             root = root.get_block_parent()
             assert isinstance(root, Block)
+            assert root is not None
             blocks.append(root)
 
         # TODO: revise if this assertion can be safely removed
-        assert blocks == sorted(blocks, key=lambda tx: tx.timestamp)
+        assert blocks == sorted(blocks, key=lambda tx: -tx.timestamp)
 
-        solvetimes_and_weights = (
+        assert len(blocks) == N + 1
+        solvetimes, weights = zip(*(
             (block.timestamp - prev_block.timestamp, block.weight)
             for block, prev_block in hathor.util.iwindows(blocks, 2)
-        )
-        solvetimes, weights = zip(*solvetimes_and_weights)
+        ))
+        assert len(solvetimes) == len(weights) == N, f'got {len(solvetimes)}, {len(weights)} expected {N}'
 
-        sum_diffs = 0.0
         sum_solvetimes = 0.0
+        logsum_weights = 0.0
 
         prefix_sum_solvetimes = [0]
         for x in solvetimes:
@@ -587,10 +586,10 @@ class HathorManager:
             x = (prefix_sum_solvetimes[i + 1] - prefix_sum_solvetimes[i - K]) / K
             ki = K * (x - T)**2 / (2 * T * T)
             ki = max(1, ki / S)
-            sum_diffs += ki * int(2**weight)
             sum_solvetimes += ki * solvetime
+            logsum_weights = sum_weights(logsum_weights, log(ki, 2) + weight)
 
-        weight = log(sum_diffs, 2) - log(sum_solvetimes, 2) + log(T, 2)
+        weight = logsum_weights - log(sum_solvetimes, 2) + log(T, 2)
 
         # Apply minimum weight
         if weight < self.min_block_weight:

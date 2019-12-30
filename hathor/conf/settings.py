@@ -85,11 +85,11 @@ class HathorSettings(NamedTuple):
 
     # Maximum distance between two consecutive blocks (in seconds), except for genesis.
     # This prevent some DoS attacks exploiting the calculation of the score of a side chain.
-    MAX_DISTANCE_BETWEEN_BLOCKS: int = 30*64  # P(t > T) = 1/e^30 = 9.35e-14
+    MAX_DISTANCE_BETWEEN_BLOCKS: int = 30 * 64  # P(t > T) = 1/e^30 = 9.35e-14
 
     # Number of blocks to be found with the same hash algorithm as `block`.
     # The bigger it is, the smaller the variance of the hash rate estimator is.
-    BLOCK_DIFFICULTY_N_BLOCKS: int = 20
+    BLOCK_DIFFICULTY_N_BLOCKS: int = 134 * 2
 
     # Size limit in bytes for Block data field
     BLOCK_DATA_MAX_SIZE: int = 100
