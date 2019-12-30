@@ -67,6 +67,15 @@ class HathorSettings(NamedTuple):
     # >>> P2PKH.create_output_script(address=address).hex()
     GENESIS_OUTPUT_SCRIPT: bytes = bytes.fromhex('76a914a584cf48b161e4a49223ed220df30037ab740e0088ac')
 
+    # Genesis timestamps, nonces and hashes
+    GENESIS_TIMESTAMP: int = 1572636343  # used as is for genesis_block, +1 for genesis_tx1 and +2 for genesis_tx2
+    GENESIS_BLOCK_NONCE: int = 3526202
+    GENESIS_BLOCK_HASH: bytes = bytes.fromhex('000007eb968a6cdf0499e2d033faf1e163e0dc9cf41876acad4d421836972038')
+    GENESIS_TX1_NONCE: int = 12595
+    GENESIS_TX1_HASH: bytes = bytes.fromhex('00025d75e44804a6a6a099f4320471c864b38d37b79b496ee26080a2a1fd5b7b')
+    GENESIS_TX2_NONCE: int = 21301
+    GENESIS_TX2_HASH: bytes = bytes.fromhex('0002c187ab30d4f61c11a5dc43240bdf92dba4d19f40f1e883b0a5fdac54ef53')
+
     # Weight of genesis and minimum weight of a tx/block
     MIN_BLOCK_WEIGHT: int = 21
     MIN_TX_WEIGHT: int = 14

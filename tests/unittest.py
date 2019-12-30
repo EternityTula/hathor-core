@@ -18,48 +18,9 @@ class TestCase(unittest.TestCase):
         self.tmpdirs = []
         self.clock = Clock()
         self.clock.advance(time.time())
-        # before patching genesis, validate the original ones are correct
-        self._validate_real_genesis()
-        self._patch_genesis_block()
-
-    def _patch_genesis_block(self):
-        """ Updates the genesis block so we can easily spend the outputs during tests. When we make any
-        changes to tx structure that impacts the hash, we also must change it here (the nonce and hash).
-        The steps for updating it are:
-        1. use the genesis block (block = hathor.transaction.genesis.GENESIS[0])
-        2. update the output script to use the one as bellow
-        3. mine block again: block.start_mining(update_time=False)
-        4. update hash: block.update_hash()
-        5. replace block nonce and hash on this function with the new ones
-        """
-        import hathor.transaction.genesis
-        from hathor.transaction import Block, Transaction
-        block = hathor.transaction.genesis.GENESIS[0]
-        self.assertIsInstance(block, Block)
-        block.outputs[0].script = bytes.fromhex('76a914fd05059b6006249543b82f36876a17c73fd2267b88ac')
-        block.resolve(update_time=False)
-        block.nonce = 4
-        block.update_hash()
-        self.assertEqual(block.hash_hex, '3807c0d4e61cedea86839a53644b0de6d61e4f08eb24281b20dd3ab4c63591a7')
-        tx1 = hathor.transaction.genesis.GENESIS[1]
-        self.assertIsInstance(tx1, Transaction)
-        tx1.nonce = 6
-        tx1.update_hash()
-        self.assertEqual(tx1.hash_hex, '16ba3dbe424c443e571b00840ca54b9ff4cff467e10b6a15536e718e2008f952')
-        tx2 = hathor.transaction.genesis.GENESIS[2]
-        self.assertIsInstance(tx2, Transaction)
-        tx2.nonce = 2
-        tx2.update_hash()
-        self.assertEqual(tx2.hash_hex, '33e14cb555a96967841dcbe0f95e9eab5810481d01de8f4f73afb8cce365e869')
 
     def tearDown(self):
         self.clean_tmpdirs()
-
-    def _validate_real_genesis(self):
-        import hathor.transaction.genesis
-        for tx in hathor.transaction.genesis.GENESIS:
-            self.assertEqual(tx.hash, tx.calculate_hash())
-            tx.verify_without_storage()
 
     def _create_test_wallet(self):
         """ Generate a Wallet with a number of keypairs for testing
