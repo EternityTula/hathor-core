@@ -56,9 +56,9 @@ class HathorSyncMethodsTestCase(unittest.TestCase):
         manager2.avg_time_between_blocks = 3
 
         for _ in range(10):
-            add_new_block(manager1)
+            add_new_block(manager1, advance_clock=1)
             add_blocks_unlock_reward(manager1)
-            add_new_block(manager2)
+            add_new_block(manager2, advance_clock=1)
             add_blocks_unlock_reward(manager2)
             self.clock.advance(10)
             for _ in range(random.randint(3, 10)):
