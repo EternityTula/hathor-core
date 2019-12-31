@@ -27,7 +27,7 @@ class TwinTxTest(unittest.TestCase):
         self.network = 'testnet'
         self.manager = self.create_peer(self.network, unlock_wallet=True)
 
-        add_new_blocks(self.manager, 1)
+        add_new_blocks(self.manager, 1, advance_clock=1)
         add_blocks_unlock_reward(self.manager)
         self.tx = add_new_transactions(self.manager, 1, advance_clock=1)[0]
 

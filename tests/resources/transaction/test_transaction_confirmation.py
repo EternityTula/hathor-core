@@ -25,10 +25,10 @@ class TransactionTest(_BaseResourceTest._ResourceTest):
         self.assertEqual(data_success['confirmation_level'], 0)
 
         # Adding blocks to have funds
-        add_new_blocks(self.manager, 2)
+        add_new_blocks(self.manager, 2, advance_clock=1)
         add_blocks_unlock_reward(self.manager)
         tx = add_new_transactions(self.manager, 5)[0]
-        add_new_blocks(self.manager, 2)
+        add_new_blocks(self.manager, 2, advance_clock=1)
         add_blocks_unlock_reward(self.manager)
         response_success2 = yield self.web.get(
             "transaction_acc_weight",

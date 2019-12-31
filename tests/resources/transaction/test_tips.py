@@ -23,7 +23,7 @@ class TipsTest(_BaseResourceTest._ResourceTest):
         self.manager.wallet.unlock(b'MYPASS')
 
         # Add blocks to have funds
-        add_new_blocks(self.manager, 2)
+        add_new_blocks(self.manager, 2, advance_clock=1)
         add_blocks_unlock_reward(self.manager)
 
         # Add one tx, now you have only one tip

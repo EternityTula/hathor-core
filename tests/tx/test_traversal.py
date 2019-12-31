@@ -16,7 +16,7 @@ class _BaseTraversalTestCase:
             for genesis in self.manager.tx_storage.get_all_genesis():
                 self.hashes_before.add(genesis.hash)
 
-            self.blocks_before = add_new_blocks(self.manager, 30)
+            self.blocks_before = add_new_blocks(self.manager, 30, advance_clock=1)
             self.txs_before = add_new_transactions(self.manager, 5)
             for block in self.blocks_before:
                 self.hashes_before.add(block.hash)
@@ -26,9 +26,9 @@ class _BaseTraversalTestCase:
             address = self.get_address(0)
             self.root_tx = add_new_tx(self.manager, address=address, value=100)
 
-            self.blocks_after = add_new_blocks(self.manager, 3)
+            self.blocks_after = add_new_blocks(self.manager, 3, advance_clock=1)
             self.txs_after = add_new_transactions(self.manager, 5)
-            self.blocks_after.extend(add_new_blocks(self.manager, 3))
+            self.blocks_after.extend(add_new_blocks(self.manager, 3, advance_clock=1))
 
             self.hashes_after = set()
             for block in self.blocks_after:

@@ -193,4 +193,4 @@ class HathorSettings(NamedTuple):
     HATHOR_TOKEN_SYMBOL: str = 'HTR'
 
     # After how many blocks can a reward be spent
-    REWARD_SPEND_MIN_BLOCKS: int = 100
+    REWARD_SPEND_MIN_BLOCKS: int = 300

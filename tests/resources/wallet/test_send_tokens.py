@@ -118,7 +118,7 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         data_error3 = response_error3.json_value()
         self.assertFalse(data_error3['success'])
 
-        add_new_blocks(self.manager, 1)
+        add_new_blocks(self.manager, 1, advance_clock=1)
         add_blocks_unlock_reward(self.manager)
 
         # Sending token with timelock
@@ -164,7 +164,7 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
 
     @inlineCallbacks
     def test_tx_weight(self):
-        add_new_blocks(self.manager, 3)
+        add_new_blocks(self.manager, 3, advance_clock=1)
         add_blocks_unlock_reward(self.manager)
         self.reactor.advance(3)
 

@@ -234,7 +234,7 @@ class BasicWallet(unittest.TestCase):
 
     def test_maybe_spent_txs(self):
         add_new_block(self.manager, advance_clock=15)
-        add_blocks_unlock_reward(self.manager)
+        blocks = add_blocks_unlock_reward(self.manager)
         w = self.manager.wallet
         new_address = w.get_unused_address()
         out = WalletOutputInfo(decode_address(new_address), 1, timelock=None)
@@ -254,6 +254,7 @@ class BasicWallet(unittest.TestCase):
         tx2.timestamp = max(tx2.get_spent_tx(txin).timestamp for txin in tx2.inputs) + 1
         tx2.parents = self.manager.get_new_tx_parents(tx2.timestamp)
         tx2.weight = 1
+        tx2.timestamp = blocks[-1].timestamp + 1
         tx2.resolve()
         self.assertTrue(self.manager.on_new_tx(tx2, fails_silently=False))
         self.clock.advance(2)

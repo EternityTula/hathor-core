@@ -28,8 +28,8 @@ class PrometheusTest(unittest.TestCase):
             self.assertEqual(text[5], 'blocks 1.0')
             self.assertEqual(text[2], 'transactions 2.0')
 
-        add_new_blocks(self.manager, 30)
-        add_new_transactions(self.manager, 5)
+        add_new_blocks(self.manager, 30, advance_clock=1)
+        add_new_transactions(self.manager, 5, advance_clock=1)
 
         with open(full_path, 'r') as f:
             text = f.read().split('\n')

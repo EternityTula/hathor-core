@@ -36,7 +36,7 @@ class TransactionTest(_BaseResourceTest._ResourceTest):
         self.assertFalse(data_error2['success'])
 
         # Adding blocks to have funds
-        add_new_blocks(self.manager, 2)
+        add_new_blocks(self.manager, 2, advance_clock=1)
         add_blocks_unlock_reward(self.manager)
         tx = add_new_transactions(self.manager, 1)[0]
 
@@ -54,7 +54,7 @@ class TransactionTest(_BaseResourceTest._ResourceTest):
     @inlineCallbacks
     def test_get_many(self):
         # Add some blocks and txs and get them in timestamp order
-        blocks = add_new_blocks(self.manager, 4)
+        blocks = add_new_blocks(self.manager, 4, advance_clock=1)
         _blocks = add_blocks_unlock_reward(self.manager)
         txs = sorted(add_new_transactions(self.manager, 25), key=lambda x: (x.timestamp, x.hash))
 

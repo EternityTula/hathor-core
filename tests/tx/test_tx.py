@@ -48,7 +48,8 @@ class BasicTransaction(unittest.TestCase):
 
         # this makes sure we can spend the genesis outputs
         self.manager = self.create_peer('testnet', tx_storage=self.tx_storage, unlock_wallet=True)
-        add_blocks_unlock_reward(self.manager)
+        blocks = add_blocks_unlock_reward(self.manager)
+        self.last_block = blocks[-1]
 
     def test_input_output_match(self):
         genesis_block = self.genesis_blocks[0]
@@ -86,7 +87,8 @@ class BasicTransaction(unittest.TestCase):
         script = P2PKH.create_output_script(address)
         output = TxOutput(value, script)
 
-        tx = Transaction(inputs=[_input], outputs=[output], storage=self.tx_storage)
+        tx = Transaction(inputs=[_input], outputs=[output], storage=self.tx_storage,
+                         timestamp=self.last_block.timestamp + 1)
 
         data_to_sign = tx.get_sighash_all(clear_input_data=True)
         public_bytes, signature = self.wallet.get_input_aux_data(data_to_sign, private_key_random)
@@ -219,7 +221,8 @@ class BasicTransaction(unittest.TestCase):
         output = TxOutput(value, script)
 
         parents = [self.genesis_txs[0].hash]
-        tx = Transaction(weight=1, inputs=[_input], outputs=[output], parents=parents, storage=self.tx_storage)
+        tx = Transaction(weight=1, inputs=[_input], outputs=[output], parents=parents,
+                         storage=self.tx_storage, timestamp=self.last_block.timestamp + 1)
 
         data_to_sign = tx.get_sighash_all(clear_input_data=True)
         public_bytes, signature = self.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
@@ -332,7 +335,8 @@ class BasicTransaction(unittest.TestCase):
         outputs = [TxOutput(value, script), TxOutput(value, script)]
 
         _input = TxInput(genesis_block.hash, 0, b'')
-        tx = Transaction(weight=1, inputs=[_input, _input], outputs=outputs, parents=parents, storage=self.tx_storage)
+        tx = Transaction(weight=1, inputs=[_input, _input], outputs=outputs, parents=parents,
+                         storage=self.tx_storage, timestamp=self.last_block.timestamp + 1)
 
         data_to_sign = tx.get_sighash_all(clear_input_data=True)
         public_bytes, signature = self.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
@@ -353,7 +357,8 @@ class BasicTransaction(unittest.TestCase):
         output = TxOutput(value, script)
 
         _input = TxInput(genesis_block.hash, 0, b'')
-        tx = Transaction(weight=1, inputs=[_input], outputs=[output], parents=parents, storage=self.tx_storage)
+        tx = Transaction(weight=1, inputs=[_input], outputs=[output], parents=parents,
+                         storage=self.tx_storage, timestamp=self.last_block.timestamp + 1)
 
         data_to_sign = tx.get_sighash_all(clear_input_data=True)
         public_bytes, signature = self.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
@@ -419,7 +424,8 @@ class BasicTransaction(unittest.TestCase):
         output = TxOutput(value, script)
 
         _input = TxInput(genesis_block.hash, 0, b'')
-        tx = Transaction(weight=1, inputs=[_input], outputs=[output], parents=parents, storage=self.tx_storage)
+        tx = Transaction(weight=1, inputs=[_input], outputs=[output], parents=parents,
+                         storage=self.tx_storage, timestamp=self.last_block.timestamp + 1)
 
         data_to_sign = tx.get_sighash_all(clear_input_data=True)
         public_bytes, signature = self.wallet.get_input_aux_data(data_to_sign, self.genesis_private_key)
@@ -701,6 +707,29 @@ class BasicTransaction(unittest.TestCase):
         # now it should be spendable
         tx = self._spend_reward_tx(self.manager, reward_block)
         self.assertTrue(self.manager.propagate_tx(tx, fails_silently=False))
+
+    def test_reward_lock_timestamp(self):
+        from hathor.transaction.exceptions import RewardLocked
+        # add block with a reward we can spend
+        reward_block = self.manager.generate_mining_block(address=get_address_from_public_key(self.genesis_public_key))
+        reward_block.resolve()
+        self.assertTrue(self.manager.propagate_tx(reward_block))
+
+        # we add enough blocks that this output could be spent based on block height
+        blocks = add_blocks_unlock_reward(self.manager)
+
+        # tx timestamp is equal to the block that unlock the spent rewards. It should
+        # be greater, so it'll fail
+        tx = self._spend_reward_tx(self.manager, reward_block)
+        tx.timestamp = blocks[-1].timestamp
+        tx.resolve()
+        with self.assertRaises(RewardLocked):
+            tx.verify()
+
+        # we can fix it be incrementing the timestamp
+        tx.timestamp = blocks[-1].timestamp + 1
+        tx.resolve()
+        tx.verify()
 
 
 if __name__ == '__main__':
