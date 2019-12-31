@@ -533,6 +533,22 @@ class HathorManager:
 
         return True
 
+    def get_weight_decay_amount(self, distance: int) -> float:
+        """Return the amount to be reduced in the weight of the block."""
+        if not settings.WEIGHT_DECAY_ENABLED:
+            return 0.0
+        if distance <= settings.WEIGHT_DECAY_ACTIVATE_DISTANCE:
+            return 0.0
+
+        dt = distance - settings.WEIGHT_DECAY_ACTIVATE_DISTANCE
+
+        # Calculate the number of windows.
+        n_windows = dt // settings.WEIGHT_DECAY_WINDOW_SIZE
+        if dt % settings.WEIGHT_DECAY_WINDOW_SIZE > 0:
+            n_windows += 1
+        assert n_windows > 0
+        return n_windows * settings.WEIGHT_DECAY_WEIGHT_AMOUNT
+
     def calculate_block_difficulty(self, block: Block) -> float:
         """ Calculate block difficulty according to the ascendents of `block`, aka DAA/difficulty adjustment algorithm
 
@@ -591,6 +607,9 @@ class HathorManager:
             logsum_weights = sum_weights(logsum_weights, log(ki, 2) + weight)
 
         weight = logsum_weights - log(sum_solvetimes, 2) + log(T, 2)
+
+        # Apply weight decay
+        weight -= self.get_weight_decay_amount(block.timestamp - root.timestamp)
 
         # Apply minimum weight
         if weight < self.min_block_weight:
