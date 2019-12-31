@@ -386,15 +386,20 @@ class BlockchainTestCase(unittest.TestCase):
         manager.min_block_weight = 2
         add_new_blocks(manager, N * 2, advance_clock=T)
         manager.min_block_weight = 1
-        for i in range(1, 4):
+        for i in range(N):
             # decreasing solvetime should increase weight
             base_weight = manager.generate_mining_block().weight
-            add_new_blocks(manager, N, advance_clock=T - i)
+            add_new_blocks(manager, i, advance_clock=T)
+            add_new_blocks(manager, 1, advance_clock=T * 0.9)
+            add_new_blocks(manager, N - i, advance_clock=T)
             new_weight = manager.generate_mining_block().weight
             self.assertGreater(new_weight, base_weight)
+            add_new_blocks(manager, N, advance_clock=T)
             # increasing solvetime should decrease weight
             base_weight = manager.generate_mining_block().weight
-            add_new_blocks(manager, N, advance_clock=T + i)
+            add_new_blocks(manager, i, advance_clock=T)
+            add_new_blocks(manager, 1, advance_clock=T * 1.1)
+            add_new_blocks(manager, N - i, advance_clock=T)
             new_weight = manager.generate_mining_block().weight
             self.assertLess(new_weight, base_weight)
 

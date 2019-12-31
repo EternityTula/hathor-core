@@ -89,7 +89,7 @@ class HathorSettings(NamedTuple):
 
     # Number of blocks to be found with the same hash algorithm as `block`.
     # The bigger it is, the smaller the variance of the hash rate estimator is.
-    BLOCK_DIFFICULTY_N_BLOCKS: int = 134 * 2
+    BLOCK_DIFFICULTY_N_BLOCKS: int = 134
 
     # Size limit in bytes for Block data field
     BLOCK_DATA_MAX_SIZE: int = 100

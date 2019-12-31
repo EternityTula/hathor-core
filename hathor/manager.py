@@ -548,7 +548,7 @@ class HathorManager:
             return self.min_block_weight
 
         root = block
-        N = min(settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_block_parent().get_metadata().height)
+        N = min(2 * settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_block_parent().get_metadata().height)
         K = N // 2
         T = self.avg_time_between_blocks
         S = 5
@@ -564,11 +564,12 @@ class HathorManager:
 
         # TODO: revise if this assertion can be safely removed
         assert blocks == sorted(blocks, key=lambda tx: -tx.timestamp)
+        blocks = list(reversed(blocks))
 
         assert len(blocks) == N + 1
         solvetimes, weights = zip(*(
             (block.timestamp - prev_block.timestamp, block.weight)
-            for block, prev_block in hathor.util.iwindows(blocks, 2)
+            for prev_block, block in hathor.util.iwindows(blocks, 2)
         ))
         assert len(solvetimes) == len(weights) == N, f'got {len(solvetimes)}, {len(weights)} expected {N}'
 
