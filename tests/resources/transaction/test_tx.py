@@ -164,3 +164,13 @@ class TransactionTest(_BaseResourceTest._ResourceTest):
 
         self.assertTrue(data6['has_more'])
 
+
+class RemoteStorageTransactionTest(TransactionTest):
+    def setUp(self):
+        self.tx_storage, self._server = start_remote_storage()
+        self.tx_storage.with_index = True
+        super().setUp()
+
+    def tearDown(self):
+        self._server.stop(0).wait()
+        super().tearDown()

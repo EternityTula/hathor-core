@@ -697,7 +697,7 @@ class BasicTransaction(unittest.TestCase):
             tx = self._spend_reward_tx(self.manager, reward_block)
             with self.assertRaises(RewardLocked):
                 tx.verify()
-            _blocks = add_new_blocks(self.manager, 1, advance_clock=1)
+            add_new_blocks(self.manager, 1, advance_clock=1)
         # now it should be spendable
         tx = self._spend_reward_tx(self.manager, reward_block)
         self.assertTrue(self.manager.propagate_tx(tx, fails_silently=False))

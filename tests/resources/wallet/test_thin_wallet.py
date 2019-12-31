@@ -204,7 +204,7 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         self.assertFalse(data['success'])
 
         # test success case
-        blocks = add_new_blocks(self.manager, 1)
+        add_new_blocks(self.manager, 1)
         add_blocks_unlock_reward(self.manager)
         token_name = 'MyTestToken'
         token_symbol = 'MTT'
@@ -237,7 +237,7 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         self.manager.wallet.unlock(b'MYPASS')
         resource = StubSite(TokenHistoryResource(self.manager))
 
-        blocks = add_new_blocks(self.manager, 1)
+        add_new_blocks(self.manager, 1)
         add_blocks_unlock_reward(self.manager)
         tx = create_tokens(self.manager, mint_amount=100, token_name='Teste', token_symbol='TST')
         token_uid = tx.tokens[0]
