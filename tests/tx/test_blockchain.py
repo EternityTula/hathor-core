@@ -403,6 +403,51 @@ class BlockchainTestCase(unittest.TestCase):
             new_weight = manager.generate_mining_block().weight
             self.assertLess(new_weight, base_weight)
 
+    def test_daa_weight_decay_amount(self):
+        manager = self.create_peer('testnet', tx_storage=self.tx_storage)
+        manager.test_mode = 0
+        amount = settings.WEIGHT_DECAY_WEIGHT_AMOUNT
+
+        for distance in range(0, settings.WEIGHT_DECAY_ACTIVATE_DISTANCE, 10):
+            self.assertEqual(manager.get_weight_decay_amount(distance), 0)
+
+        distance = settings.WEIGHT_DECAY_ACTIVATE_DISTANCE - 1
+        self.assertAlmostEqual(manager.get_weight_decay_amount(distance), 0)
+
+        distance = settings.WEIGHT_DECAY_ACTIVATE_DISTANCE
+        for k in range(1, 11):
+            for _ in range(settings.WEIGHT_DECAY_WINDOW_SIZE):
+                distance += 1
+                self.assertAlmostEqual(manager.get_weight_decay_amount(distance), k * amount)
+
+    def test_daa_weight_decay_blocks(self):
+        manager = self.create_peer('testnet', tx_storage=self.tx_storage)
+        manager.test_mode = 0
+        amount = settings.WEIGHT_DECAY_WEIGHT_AMOUNT
+
+        print(settings)
+
+        blocks = add_new_blocks(manager, 5, advance_clock=settings.AVG_TIME_BETWEEN_BLOCKS)
+        base_weight = manager.generate_mining_block().weight
+        self.assertGreater(base_weight, settings.MIN_BLOCK_WEIGHT)
+
+        add_new_blocks(manager, 2 * settings.BLOCK_DIFFICULTY_N_BLOCKS, advance_clock=settings.AVG_TIME_BETWEEN_BLOCKS)
+
+        k = settings.WEIGHT_DECAY_ACTIVATE_DISTANCE // settings.AVG_TIME_BETWEEN_BLOCKS
+        cur = manager.reactor.seconds()
+        dt = 0
+        while dt < settings.WEIGHT_DECAY_ACTIVATE_DISTANCE:
+            manager.reactor.advance(1)
+            dt += 1
+            weight = manager.generate_mining_block().weight
+            self.assertAlmostEqual(base_weight, weight)
+
+        dt = 0
+        while dt < settings.WEIGHT_DECAY_WINDOW_SIZE:
+            manager.reactor.advance(1)
+            dt += 1
+            weight = manager.generate_mining_block().weight
+            self.assertAlmostEqual(base_weight, max(settings.MIN_BLOCK_WEIGHT, weight - amount))
 
 if __name__ == '__main__':
     unittest.main()

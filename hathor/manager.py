@@ -537,7 +537,7 @@ class HathorManager:
         """Return the amount to be reduced in the weight of the block."""
         if not settings.WEIGHT_DECAY_ENABLED:
             return 0.0
-        if distance <= settings.WEIGHT_DECAY_ACTIVATE_DISTANCE:
+        if distance < settings.WEIGHT_DECAY_ACTIVATE_DISTANCE:
             return 0.0
 
         dt = distance - settings.WEIGHT_DECAY_ACTIVATE_DISTANCE
@@ -564,7 +564,8 @@ class HathorManager:
             return self.min_block_weight
 
         root = block
-        N = min(2 * settings.BLOCK_DIFFICULTY_N_BLOCKS, root.get_block_parent().get_metadata().height)
+        parent = root.get_block_parent()
+        N = min(2 *settings.BLOCK_DIFFICULTY_N_BLOCKS, parent.get_metadata().height)
         K = N // 2
         T = self.avg_time_between_blocks
         S = 5
@@ -609,7 +610,7 @@ class HathorManager:
         weight = logsum_weights - log(sum_solvetimes, 2) + log(T, 2)
 
         # Apply weight decay
-        weight -= self.get_weight_decay_amount(block.timestamp - root.timestamp)
+        weight -= self.get_weight_decay_amount(block.timestamp - parent.timestamp)
 
         # Apply minimum weight
         if weight < self.min_block_weight:
