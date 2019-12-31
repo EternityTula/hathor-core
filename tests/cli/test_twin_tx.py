@@ -7,6 +7,7 @@ from hathor.conf import HathorSettings
 from hathor.transaction import Transaction, TransactionMetadata
 from tests import unittest
 from tests.utils import (
+    add_blocks_unlock_reward,
     add_new_blocks,
     add_new_transactions,
     execute_mining,
@@ -26,6 +27,7 @@ class TwinTxTest(unittest.TestCase):
         self.manager = self.create_peer(self.network, unlock_wallet=True)
 
         add_new_blocks(self.manager, 1)
+        add_blocks_unlock_reward(self.manager)
         self.tx = add_new_transactions(self.manager, 1, advance_clock=1)[0]
 
         self.parser = create_parser()

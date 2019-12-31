@@ -16,7 +16,7 @@ class _BaseTraversalTestCase:
             for genesis in self.manager.tx_storage.get_all_genesis():
                 self.hashes_before.add(genesis.hash)
 
-            self.blocks_before = add_new_blocks(self.manager, 3)
+            self.blocks_before = add_new_blocks(self.manager, 30)
             self.txs_before = add_new_transactions(self.manager, 5)
             for block in self.blocks_before:
                 self.hashes_before.add(block.hash)

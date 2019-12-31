@@ -7,7 +7,7 @@ from hathor.manager import TestMode
 from hathor.transaction.genesis import get_genesis_transactions
 from hathor.wallet import HDWallet
 from tests import unittest
-from tests.utils import FakeConnection, add_new_block, add_new_double_spending, add_new_transactions
+from tests.utils import FakeConnection, add_blocks_unlock_reward, add_new_block, add_new_double_spending, add_new_transactions
 
 
 class HathorSyncMethodsTestCase(unittest.TestCase):
@@ -51,7 +51,9 @@ class HathorSyncMethodsTestCase(unittest.TestCase):
 
         for _ in range(10):
             add_new_block(manager1)
+            add_blocks_unlock_reward(manager1)
             add_new_block(manager2)
+            add_blocks_unlock_reward(manager2)
             self.clock.advance(10)
             for _ in range(random.randint(3, 10)):
                 add_new_transactions(manager1, random.randint(2, 4))

@@ -4,7 +4,7 @@ from hathor.conf import HathorSettings
 from hathor.transaction import sum_weights
 from hathor.transaction.storage import TransactionMemoryStorage
 from tests import unittest
-from tests.utils import add_new_blocks, add_new_transactions
+from tests.utils import add_blocks_unlock_reward, add_new_blocks, add_new_transactions
 
 settings = HathorSettings()
 
@@ -39,8 +39,8 @@ class BlockchainTestCase(unittest.TestCase):
         for tx in self.genesis_txs:
             score = sum_weights(score, tx.weight)
 
-        # Mine 50 blocks in a row with no transaction but the genesis
-        blocks = add_new_blocks(manager, 50, advance_clock=15)
+        # Mine 100 blocks in a row with no transaction but the genesis
+        blocks = add_new_blocks(manager, 100, advance_clock=15)
         for i, block in enumerate(blocks):
             meta = block.get_metadata(force_reload=True)
             score = sum_weights(score, block.weight)
@@ -51,8 +51,8 @@ class BlockchainTestCase(unittest.TestCase):
         for tx in txs:
             score = sum_weights(score, tx.weight)
 
-        # Mine more 50 blocks in a row with no transactions between them
-        blocks = add_new_blocks(manager, 100)
+        # Mine 50 more blocks in a row with no transactions between them
+        blocks = add_new_blocks(manager, 50)
         for i, block in enumerate(blocks):
             meta = block.get_metadata()
             score = sum_weights(score, block.weight)

@@ -14,7 +14,7 @@ from hathor.wallet.base_wallet import WalletBalance, WalletInputInfo, WalletOutp
 from hathor.wallet.exceptions import InsufficientFunds, InvalidAddress, OutOfUnusedAddresses, WalletLocked
 from hathor.wallet.keypair import KeyPair
 from tests import unittest
-from tests.utils import add_new_block, create_tokens, get_genesis_key
+from tests.utils import add_blocks_unlock_reward, add_new_block, create_tokens, get_genesis_key
 
 settings = HathorSettings()
 
@@ -182,6 +182,7 @@ class BasicWallet(unittest.TestCase):
 
     def test_create_token_transaction(self):
         add_new_block(self.manager, advance_clock=5)
+        add_blocks_unlock_reward(self.manager)
         tx = create_tokens(self.manager)
 
         tokens_created = tx.outputs[0].value
@@ -233,6 +234,7 @@ class BasicWallet(unittest.TestCase):
 
     def test_maybe_spent_txs(self):
         add_new_block(self.manager, advance_clock=15)
+        add_blocks_unlock_reward(self.manager)
         w = self.manager.wallet
         new_address = w.get_unused_address()
         out = WalletOutputInfo(decode_address(new_address), 1, timelock=None)

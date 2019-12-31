@@ -28,7 +28,7 @@ from hathor.transaction.storage import TransactionMemoryStorage
 from hathor.transaction.util import int_to_bytes
 from hathor.wallet import Wallet
 from tests import unittest
-from tests.utils import add_new_blocks, add_new_transactions, get_genesis_key
+from tests.utils import add_blocks_unlock_reward, add_new_blocks, add_new_transactions, get_genesis_key
 
 settings = HathorSettings()
 
@@ -45,6 +45,10 @@ class BasicTransaction(unittest.TestCase):
         # read genesis keys
         self.genesis_private_key = get_genesis_key()
         self.genesis_public_key = self.genesis_private_key.public_key()
+
+        # this makes sure we can spend the genesis outputs
+        self.manager = self.create_peer('testnet', tx_storage=self.tx_storage, unlock_wallet=True)
+        add_blocks_unlock_reward(self.manager)
 
     def test_input_output_match(self):
         genesis_block = self.genesis_blocks[0]
@@ -143,12 +147,20 @@ class BasicTransaction(unittest.TestCase):
 
     def test_children_update(self):
         tx = self._gen_tx_spending_genesis_block()
+
+        # get info before update
+        children_len = []
+        for parent in tx.get_parents():
+            metadata = parent.get_metadata()
+            children_len.append(len(metadata.children))
+
+        # update metadata
         tx.update_initial_metadata()
 
         # genesis transactions should have only this tx in their children set
-        for parent in tx.get_parents():
+        for old_len, parent in zip(children_len, tx.get_parents()):
             metadata = parent.get_metadata()
-            self.assertEqual(len(metadata.children), 1)
+            self.assertEqual(len(metadata.children) - old_len, 1)
             self.assertEqual(metadata.children.pop(), tx.hash)
 
     def test_block_inputs(self):
@@ -442,8 +454,7 @@ class BasicTransaction(unittest.TestCase):
         self.assertEquals(tx.timestamp, ts)
 
     def test_propagation_error(self):
-        network = 'testnet'
-        manager = self.create_peer(network, unlock_wallet=True)
+        manager = self.create_peer('testnet', unlock_wallet=True)
         manager.test_mode = TestMode.DISABLED
 
         # 1. propagate genesis
@@ -471,11 +482,9 @@ class BasicTransaction(unittest.TestCase):
         self.assertFalse(manager.propagate_tx(block))
 
     def test_tx_methods(self):
-        network = 'testnet'
-        manager = self.create_peer(network, unlock_wallet=True)
-
-        blocks = add_new_blocks(manager, 2, advance_clock=1)
-        txs = add_new_transactions(manager, 2, advance_clock=1)
+        blocks = add_new_blocks(self.manager, 2, advance_clock=1)
+        add_blocks_unlock_reward(self.manager)
+        txs = add_new_transactions(self.manager, 2, advance_clock=1)
 
         # Validate __str__, __bytes__, __eq__
         tx = txs[0]
@@ -546,11 +555,8 @@ class BasicTransaction(unittest.TestCase):
         assert cloned_block == block
 
     def test_block_data(self):
-        network = 'testnet'
-        manager = self.create_peer(network, unlock_wallet=True)
-
         def add_block_with_data(data: bytes = b''):
-            add_new_blocks(manager, 1, advance_clock=1, block_data=data)[0]
+            add_new_blocks(self.manager, 1, advance_clock=1, block_data=data)[0]
 
         add_block_with_data()
         add_block_with_data(b'Testing, testing 1, 2, 3...')
@@ -682,21 +688,19 @@ class BasicTransaction(unittest.TestCase):
 
     def test_reward_lock(self):
         from hathor.transaction.exceptions import RewardLocked
-        network = 'testnet'
-        manager = self.create_peer(network, unlock_wallet=True)
         # add block with a reward we can spend
-        reward_block = manager.generate_mining_block(address=get_address_from_public_key(self.genesis_public_key))
+        reward_block = self.manager.generate_mining_block(address=get_address_from_public_key(self.genesis_public_key))
         reward_block.resolve()
-        self.assertTrue(manager.propagate_tx(reward_block))
+        self.assertTrue(self.manager.propagate_tx(reward_block))
         # reward cannot be spent while not enough blocks are added
         for _ in range(settings.REWARD_SPEND_MIN_BLOCKS):
-            tx = self._spend_reward_tx(manager, reward_block)
+            tx = self._spend_reward_tx(self.manager, reward_block)
             with self.assertRaises(RewardLocked):
                 tx.verify()
-            _blocks = add_new_blocks(manager, 1, advance_clock=1)
+            _blocks = add_new_blocks(self.manager, 1, advance_clock=1)
         # now it should be spendable
-        tx = self._spend_reward_tx(manager, reward_block)
-        self.assertTrue(manager.propagate_tx(tx, fails_silently=False))
+        tx = self._spend_reward_tx(self.manager, reward_block)
+        self.assertTrue(self.manager.propagate_tx(tx, fails_silently=False))
 
 
 if __name__ == '__main__':
