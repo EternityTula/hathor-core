@@ -543,11 +543,8 @@ class HathorManager:
         dt = distance - settings.WEIGHT_DECAY_ACTIVATE_DISTANCE
 
         # Calculate the number of windows.
-        n_windows = dt // settings.WEIGHT_DECAY_WINDOW_SIZE
-        if dt % settings.WEIGHT_DECAY_WINDOW_SIZE > 0:
-            n_windows += 1
-        assert n_windows > 0
-        return n_windows * settings.WEIGHT_DECAY_WEIGHT_AMOUNT
+        n_windows = 1 + (dt // settings.WEIGHT_DECAY_WINDOW_SIZE)
+        return n_windows * settings.WEIGHT_DECAY_AMOUNT
 
     def calculate_block_difficulty(self, block: Block) -> float:
         """ Calculate block difficulty according to the ascendents of `block`, aka DAA/difficulty adjustment algorithm
@@ -565,7 +562,7 @@ class HathorManager:
 
         root = block
         parent = root.get_block_parent()
-        N = min(2 *settings.BLOCK_DIFFICULTY_N_BLOCKS, parent.get_metadata().height)
+        N = min(2 * settings.BLOCK_DIFFICULTY_N_BLOCKS, parent.get_metadata().height - 1)
         K = N // 2
         T = self.avg_time_between_blocks
         S = 5

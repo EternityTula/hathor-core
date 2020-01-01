@@ -413,7 +413,7 @@ class BlockchainTestCase(unittest.TestCase):
     def test_daa_weight_decay_amount(self):
         manager = self.create_peer('testnet', tx_storage=self.tx_storage)
         manager.test_mode = 0
-        amount = settings.WEIGHT_DECAY_WEIGHT_AMOUNT
+        amount = settings.WEIGHT_DECAY_AMOUNT
 
         for distance in range(0, settings.WEIGHT_DECAY_ACTIVATE_DISTANCE, 10):
             self.assertEqual(manager.get_weight_decay_amount(distance), 0)
@@ -424,37 +424,50 @@ class BlockchainTestCase(unittest.TestCase):
         distance = settings.WEIGHT_DECAY_ACTIVATE_DISTANCE
         for k in range(1, 11):
             for _ in range(settings.WEIGHT_DECAY_WINDOW_SIZE):
-                distance += 1
                 self.assertAlmostEqual(manager.get_weight_decay_amount(distance), k * amount)
+                distance += 1
+        self.assertAlmostEqual(manager.get_weight_decay_amount(distance), 11 * amount)
 
     def test_daa_weight_decay_blocks(self):
         manager = self.create_peer('testnet', tx_storage=self.tx_storage)
         manager.test_mode = 0
-        amount = settings.WEIGHT_DECAY_WEIGHT_AMOUNT
+        amount = settings.WEIGHT_DECAY_AMOUNT
 
-        print(settings)
-
-        blocks = add_new_blocks(manager, 5, advance_clock=settings.AVG_TIME_BETWEEN_BLOCKS)
-        base_weight = manager.generate_mining_block().weight
-        self.assertGreater(base_weight, settings.MIN_BLOCK_WEIGHT)
-
+        manager.avg_time_between_blocks = settings.AVG_TIME_BETWEEN_BLOCKS
+        manager.min_block_weight = 2 + 2 * settings.WEIGHT_DECAY_AMOUNT
         add_new_blocks(manager, 2 * settings.BLOCK_DIFFICULTY_N_BLOCKS, advance_clock=settings.AVG_TIME_BETWEEN_BLOCKS)
+        manager.min_block_weight = 1
 
-        k = settings.WEIGHT_DECAY_ACTIVATE_DISTANCE // settings.AVG_TIME_BETWEEN_BLOCKS
-        cur = manager.reactor.seconds()
-        dt = 0
+        base_weight = manager.generate_mining_block().weight
+        self.assertGreater(base_weight, manager.min_block_weight)
+
+        add_new_blocks(manager, 20, advance_clock=settings.AVG_TIME_BETWEEN_BLOCKS)
+
+        dt = settings.AVG_TIME_BETWEEN_BLOCKS  # the latest call to add_new_blocks will advance the clock
         while dt < settings.WEIGHT_DECAY_ACTIVATE_DISTANCE:
+            weight = manager.generate_mining_block().weight
+            self.assertAlmostEqual(weight, base_weight)
             manager.reactor.advance(1)
             dt += 1
-            weight = manager.generate_mining_block().weight
-            self.assertAlmostEqual(base_weight, weight)
 
         dt = 0
         while dt < settings.WEIGHT_DECAY_WINDOW_SIZE:
+            weight = manager.generate_mining_block().weight
+            self.assertAlmostEqual(weight, base_weight - amount)
             manager.reactor.advance(1)
             dt += 1
+
+        dt = 0
+        while dt < settings.WEIGHT_DECAY_WINDOW_SIZE:
             weight = manager.generate_mining_block().weight
-            self.assertAlmostEqual(base_weight, max(settings.MIN_BLOCK_WEIGHT, weight - amount))
+            self.assertAlmostEqual(weight, base_weight - 2*amount)
+            manager.reactor.advance(1)
+            dt += 1
+
+        manager.reactor.advance(1)
+        weight = manager.generate_mining_block().weight
+        self.assertAlmostEqual(weight, manager.min_block_weight)
+
 
 if __name__ == '__main__':
     unittest.main()

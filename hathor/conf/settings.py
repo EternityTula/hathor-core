@@ -111,9 +111,9 @@ class HathorSettings(NamedTuple):
     #     difficulty = 2**(weight - decay)
     #     difficulty = 2**weight / 2**decay
     # As 2**(-2.73) = 0.15072, it reduces the mining difficulty for 15% of the original weight.
-    # Finally, the maximum decay is `max_steps * WEIGHT_DECAY_WEIGHT_AMOUNT`.
+    # Finally, the maximum decay is `max_steps * WEIGHT_DECAY_AMOUNT`.
     # As `max_steps = 7`, then `max_decay = 2**(-7 * 2.73) = 1.767e-06`.
-    WEIGHT_DECAY_WEIGHT_AMOUNT: float = 2.73
+    WEIGHT_DECAY_AMOUNT: float = 2.73
 
     # Number of blocks to be found with the same hash algorithm as `block`.
     # The bigger it is, the smaller the variance of the hash rate estimator is.
