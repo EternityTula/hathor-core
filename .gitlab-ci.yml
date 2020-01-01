@@ -17,6 +17,9 @@ check:
     - make protos
   script:
     - make check
+  except:
+    refs:
+      - testnet-delta-preview
 
 unit-tests:
   stage: unit-tests
@@ -32,3 +35,6 @@ unit-tests:
   script:
     - pipenv run make tests
   coverage: '/^TOTAL.*\s+(\d+\%)$/'
+  except:
+    refs:
+      - testnet-delta-preview
