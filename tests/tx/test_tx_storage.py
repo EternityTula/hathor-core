@@ -81,9 +81,6 @@ class _BaseTransactionStorageTest:
             # Disable weakref to test the internal methods. Otherwise, most methods return objects from weakref.
             self.tx_storage._disable_weakref()
 
-            # we use this flag to skip a test for remote storage with cache
-            self.remoteCacheStorage = False
-
         def tearDown(self):
             shutil.rmtree(self.tmpdir)
 
@@ -299,7 +296,7 @@ class _BaseTransactionStorageTest:
             return block
 
         def test_topological_sort(self):
-            if (self.remoteCacheStorage):
+            if (self.__class__.__name__ == 'RemoteCacheMemoryStorageTest'):
                 self.skipTest('skipping this test for remote storage with cache')
             self.manager.test_mode = TestMode.TEST_ALL_WEIGHT
             _total = 0
@@ -429,7 +426,6 @@ class RemoteCacheMemoryStorageTest(_BaseTransactionStorageTest._RemoteStorageTes
         store = TransactionMemoryStorage()
         reactor = Clock()
         super().setUp(TransactionCacheStorage(store, reactor, capacity=5))
-        self.remoteCacheStorage = True
 
 
 class TransactionRocksDBStorageTest(_BaseTransactionStorageTest._TransactionStorageTest):
