@@ -367,10 +367,10 @@ class StratumProtocol(JSONRPC):
         self.factory.miner_protocols[self.miner_id] = self
         self.connection_start_time = self.factory.get_current_timestamp()
         self.log = self.log.bind(miner_id=self.miner_id, conn_at=self.connection_start_time)
-        self.log.info('New miner')
+        self.log.debug('new connection')
 
     def connectionLost(self, reason: Failure = None) -> None:
-        self.log.info('Miner exited')
+        self.log.debug('connection exited')
         assert self.miner_id is not None
         self.factory.miner_protocols.pop(self.miner_id)
 
