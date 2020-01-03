@@ -17,7 +17,6 @@ limitations under the License.
 import datetime
 import json
 import random
-import sys
 import time
 from enum import Enum, IntFlag
 from math import log
@@ -289,9 +288,6 @@ class HathorManager:
                 self.log.error('An unexpected error occurred when initializing {tx.hash_hex}\n'
                                '{pretty_json}', tx=tx, pretty_json=pretty_json)
                 raise
-                # As there is no handler for the exception, this point should never be reached.
-                # This exit is here just to guarantee that the node will be stopped.
-                sys.exit(-1)
 
             if time.time() - t2 > 1:
                 self.log.warn('Warning: {} took {} seconds to be processed.'.format(tx.hash.hex(), time.time() - t2))
