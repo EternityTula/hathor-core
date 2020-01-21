@@ -34,56 +34,53 @@ class PushTxResource(resource.Resource):
 
         requested_decode = request.args[b'hex_tx'][0].decode('utf-8')
 
-        pattern = r'[a-fA-F\d]+'
-        if re.match(pattern, requested_decode) and len(requested_decode) % 2 == 0:
+        try:
             tx_bytes = bytes.fromhex(requested_decode)
-
-            try:
-                tx = tx_or_block_from_bytes(tx_bytes)
-            except struct.error:
-                data = {
-                    'success': False,
-                    'message': 'This transaction is invalid. Try to decode it first to validate it.',
-                    'can_force': False
-                }
-            else:
-                if len(tx.inputs) == 0:
-                    # It's a block and we can't push blocks
-                    data = {
-                        'success': False,
-                        'message': 'This transaction is invalid. A transaction must have at least one input',
-                        'can_force': False
-                    }
-                else:
-                    tx.storage = self.manager.tx_storage
-                    # If this tx is a double spending, don't even try to propagate in the network
-                    is_double_spending = tx.is_double_spending()
-                    if is_double_spending:
-                        data = {
-                            'success': False,
-                            'message': 'Invalid transaction. At least one of your inputs has already been spent.',
-                            'can_force': False
-                        }
-                    else:
-                        success, message = tx.validate_tx_error()
-
-                        force = b'force' in request.args and request.args[b'force'][0].decode('utf-8') == 'true'
-                        if success or force:
-                            message = ''
-                            try:
-                                success = self.manager.propagate_tx(tx, fails_silently=False)
-                            except (InvalidNewTransaction, TxValidationError) as e:
-                                success = False
-                                message = str(e)
-                            data = {'success': success, 'message': message}
-                        else:
-                            data = {'success': success, 'message': message, 'can_force': True}
-        else:
+            tx = tx_or_block_from_bytes(tx_bytes)
+        except ValueError:
+            data = {
+                'success': False,
+                'message': 'Invalid hexadecimal data',
+                'can_force': False
+            }
+        except struct.error:
             data = {
                 'success': False,
                 'message': 'This transaction is invalid. Try to decode it first to validate it.',
                 'can_force': False
             }
+        else:
+            if len(tx.inputs) == 0:
+                # It's a block and we can't push blocks
+                data = {
+                    'success': False,
+                    'message': 'This transaction is invalid. A transaction must have at least one input',
+                    'can_force': False
+                }
+            else:
+                tx.storage = self.manager.tx_storage
+                # If this tx is a double spending, don't even try to propagate in the network
+                is_double_spending = tx.is_double_spending()
+                if is_double_spending:
+                    data = {
+                        'success': False,
+                        'message': 'Invalid transaction. At least one of your inputs has already been spent.',
+                        'can_force': False
+                    }
+                else:
+                    success, message = tx.validate_tx_error()
+
+                    force = b'force' in request.args and request.args[b'force'][0].decode('utf-8') == 'true'
+                    if success or force:
+                        message = ''
+                        try:
+                            success = self.manager.propagate_tx(tx, fails_silently=False)
+                        except (InvalidNewTransaction, TxValidationError) as e:
+                            success = False
+                            message = str(e)
+                        data = {'success': success, 'message': message}
+                    else:
+                        data = {'success': success, 'message': message, 'can_force': True}
 
         return json.dumps(data, indent=4).encode('utf-8')
 
