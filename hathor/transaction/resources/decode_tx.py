@@ -37,19 +37,16 @@ class DecodeTxResource(resource.Resource):
         else:
             return get_missing_params_msg('hex_tx')
 
-        pattern = r'[a-fA-F\d]+'
-        if re.match(pattern, requested_decode) and len(requested_decode) % 2 == 0:
+        try:
             tx_bytes = bytes.fromhex(requested_decode)
+            tx = tx_or_block_from_bytes(tx_bytes)
+            tx.storage = self.manager.tx_storage
+            data = get_tx_extra_data(tx)
+        except ValueError:
+            data = {'success': False, 'message': 'Invalid hexadecimal data'}
+        except struct.error:
+            data = {'success': False, 'message': 'Could not decode transaction'}
 
-            try:
-                tx = tx_or_block_from_bytes(tx_bytes)
-                tx.storage = self.manager.tx_storage
-                data = get_tx_extra_data(tx)
-            except struct.error:
-                data = {'success': False}
-
-        else:
-            data = {'success': False}
         return json.dumps(data, indent=4).encode('utf-8')
 
 
