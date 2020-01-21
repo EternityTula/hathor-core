@@ -17,3 +17,23 @@ class DashboardTest(_BaseResourceTest._ResourceTest):
 
         self.assertLessEqual(len(data['transactions']), tx_count)
         self.assertLessEqual(len(data['blocks']), block_count)
+
+    @inlineCallbacks
+    def test_invalid_parameters(self):
+        # wrong type block
+        response = yield self.web.get("dashboard_tx", {b'block': 'a', b'tx': 6})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+        # missing block param
+        response = yield self.web.get("dashboard_tx", {b'tx': 6})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # wrong type tx
+        response = yield self.web.get("dashboard_tx", {b'block': '6', b'tx': 'a'})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+        # missing tx param
+        response = yield self.web.get("dashboard_tx", {b'block': '6'})
+        data = response.json_value()
+        self.assertFalse(data['success'])

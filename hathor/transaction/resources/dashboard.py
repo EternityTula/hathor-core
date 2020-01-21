@@ -35,8 +35,19 @@ class DashboardTransactionResource(resource.Resource):
         set_cors(request, 'GET')
 
         # Get quantity for each
-        block_count = int(request.args[b'block'][0])
-        tx_count = int(request.args[b'tx'][0])
+        try:
+            block_count = int(request.args[b'block'][0])
+        except KeyError:
+            return json.dumps({'success': False, 'message': 'Missing parameter: block'}).encode('utf-8')
+        except ValueError:
+            return json.dumps({'success': False, 'message': 'Invalid parameter, cannot convert to int: block'}).encode('utf-8')
+
+        try:
+            tx_count = int(request.args[b'tx'][0])
+        except KeyError:
+            return json.dumps({'success': False, 'message': 'Missing parameter: tx'}).encode('utf-8')
+        except ValueError:
+            return json.dumps({'success': False, 'message': 'Invalid parameter, cannot convert to int: tx'}).encode('utf-8')
 
         # Restrict counts
         block_count = min(block_count, settings.MAX_DASHBOARD_COUNT)
@@ -49,6 +60,7 @@ class DashboardTransactionResource(resource.Resource):
         serialized_blocks = [block.to_json_extended() for block in blocks]
 
         data = {
+            'success': True,
             'transactions': serialized_tx,
             'blocks': serialized_blocks,
         }
@@ -108,6 +120,7 @@ DashboardTransactionResource.openapi = {
                                 'success': {
                                     'summary': 'Transaction decoded',
                                     'value': {
+                                        'success': True,
                                         'transactions': [
                                             {
                                                 'tx_id': ('0002bb171de3490828028ec5eef33259'
@@ -205,6 +218,13 @@ DashboardTransactionResource.openapi = {
                                                 'tokens': []
                                             }
                                         ]
+                                    }
+                                },
+                                'error': {
+                                    'summary': 'Invalid parameters',
+                                    'value': {
+                                        'success': False,
+                                        'message': 'Invalid parameter, cannot convert to int: block',
                                     }
                                 }
                             }
