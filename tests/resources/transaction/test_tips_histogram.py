@@ -24,15 +24,40 @@ class TipsTest(_BaseResourceTest._ResourceTest):
 
         response1 = yield self.web.get("tips-histogram", {b'begin': txs[0].timestamp, b'end': txs[0].timestamp})
         data1 = response1.json_value()
-        self.assertEqual(len(data1), 1)
-        self.assertEqual([txs[0].timestamp, 1], data1[0])
+        self.assertTrue(data1['success'])
+        self.assertEqual(len(data1['tips']), 1)
+        self.assertEqual([txs[0].timestamp, 1], data1['tips'][0])
 
         response2 = yield self.web.get("tips-histogram", {b'begin': txs[0].timestamp, b'end': txs[0].timestamp + 1})
         data2 = response2.json_value()
-        self.assertEqual(len(data2), 2)
-        self.assertEqual([txs[0].timestamp, 1], data2[0])
-        self.assertEqual([txs[0].timestamp + 1, 1], data2[1])
+        self.assertTrue(data2['success'])
+        self.assertEqual(len(data2['tips']), 2)
+        self.assertEqual([txs[0].timestamp, 1], data2['tips'][0])
+        self.assertEqual([txs[0].timestamp + 1, 1], data2['tips'][1])
 
         response3 = yield self.web.get("tips-histogram", {b'begin': txs[0].timestamp, b'end': txs[-1].timestamp})
         data3 = response3.json_value()
-        self.assertEqual(len(data3), 19)
+        self.assertTrue(data3['success'])
+        self.assertEqual(len(data3['tips']), 19)
+
+    @inlineCallbacks
+    def test_invalid_params(self):
+        # missing end param
+        response = yield self.web.get("tips-histogram", {b'begin': 0})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # wrong end param
+        response = yield self.web.get("tips-histogram", {b'begin': 'a', b'end': 10})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # missing begin param
+        response = yield self.web.get("tips-histogram", {b'end': 0})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # wrong begin param
+        response = yield self.web.get("tips-histogram", {b'begin': 0, b'end': 'a'})
+        data = response.json_value()
+        self.assertFalse(data['success'])
