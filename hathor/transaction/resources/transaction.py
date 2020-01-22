@@ -158,14 +158,36 @@ class TransactionResource(resource.Resource):
             'timestamp': int, the timestamp reference we are in the pagination
             'page': 'previous' or 'next', to indicate if the user wants after or before the hash reference
         """
-        count = min(int(request.args[b'count'][0]), settings.MAX_TX_COUNT)
-        type_tx = request.args[b'type'][0].decode('utf-8')
+        try:
+            count = min(int(request.args[b'count'][0]), settings.MAX_TX_COUNT)
+        except ValueError:
+            return {'success': False, 'message': 'Invalid \'count\' parameter, expected an integer'}
+
+        try:
+            type_tx = request.args[b'type'][0].decode('utf-8')
+        except KeyError:
+            return {'success': False, 'message': 'Missing \'type\' parameter'}
+        if type_tx != 'tx' and type_tx != 'block':
+            return {'success': False, 'message': 'Invalid \'type\' parameter, expected \'block\' or \'tx\''}
+
         ref_hash = None
         page = ''
         if b'hash' in request.args:
             ref_hash = request.args[b'hash'][0].decode('utf-8')
-            ref_timestamp = int(request.args[b'timestamp'][0].decode('utf-8'))
-            page = request.args[b'page'][0].decode('utf-8')
+
+            try:
+                ref_timestamp = int(request.args[b'timestamp'][0].decode('utf-8'))
+            except KeyError:
+                return {'success': False, 'message': 'Missing \'timestamp\' parameter'}
+            except ValueError:
+                return {'success': False, 'message': 'Invalid \'timestamp\' parameter, expected an integer'}
+
+            try:
+                page = request.args[b'page'][0].decode('utf-8')
+            except KeyError:
+                return {'success': False, 'message': 'Missing \'page\' parameter'}
+            if page != 'previous' and page != 'next':
+                return {'success': False, 'message': 'Invalid \'page\' parameter, expected \'previous\' or \'next\''}
 
             if type_tx == 'block':
                 if page == 'previous':
