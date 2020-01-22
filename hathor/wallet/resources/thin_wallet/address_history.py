@@ -6,6 +6,8 @@ from twisted.web.http import Request
 
 from hathor.api_util import set_cors
 from hathor.cli.openapi_files.register import register_resource
+from hathor.crypto.util import decode_address
+from hathor.wallet.exceptions import InvalidAddress
 
 
 @register_resource
@@ -37,12 +39,21 @@ class AddressHistoryResource(resource.Resource):
             request.setResponseCode(503)
             return json.dumps({'success': False}, indent=4).encode('utf-8')
 
+        if not b'addresses[]' in request.args:
+            return json.dumps({'success': False, 'message': 'Missing parameter \'addresses[]\''}).encode('utf-8')
         addresses = request.args[b'addresses[]']
 
         history = []
         seen: Set[bytes] = set()
         for address_to_decode in addresses:
             address = address_to_decode.decode('utf-8')
+            try:
+                decode_address(address)
+            except InvalidAddress:
+                return json.dumps({
+                    'success': False,
+                    'message': 'The address {} is invalid'.format(address)
+                }).encode('utf-8')
             for tx_hash in wallet_index.get_from_address(address):
                 tx = self.manager.tx_storage.get_transaction(tx_hash)
                 if tx_hash not in seen:

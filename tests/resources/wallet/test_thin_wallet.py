@@ -333,3 +333,19 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         self.assertTrue(data['success'])
         self.assertFalse(data['has_more'])
         self.assertEqual(0, len(data['transactions']))
+
+    @inlineCallbacks
+    def test_address_history_invalid_params(self):
+        # missing param
+        response_history = yield self.web_address_history.get('thin_wallet/address_history')
+        response_data = response_history.json_value()
+        self.assertFalse(response_data['success'])
+
+        # invalid address
+        response_history = yield self.web_address_history.get(
+            'thin_wallet/address_history', {
+                b'addresses[]': b'aaa'
+            }
+        )
+        response_data = response_history.json_value()
+        self.assertFalse(response_data['success'])
