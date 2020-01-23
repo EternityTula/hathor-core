@@ -1150,7 +1150,8 @@ def tx_or_block_from_proto(tx_proto: protos.BaseTransaction,
         raise ValueError('invalid base_transaction_oneof')
 
 
-def tx_or_block_from_bytes(data: bytes) -> BaseTransaction:
+def tx_or_block_from_bytes(data: bytes,
+                           storage: Optional['TransactionStorage'] = None) -> BaseTransaction:
     """ Creates the correct tx subclass from a sequence of bytes
     """
     # version field takes up the first 2 bytes
@@ -1158,6 +1159,6 @@ def tx_or_block_from_bytes(data: bytes) -> BaseTransaction:
     try:
         tx_version = TxVersion(version)
         cls = tx_version.get_cls()
-        return cls.create_from_struct(data)
+        return cls.create_from_struct(data, storage=storage)
     except ValueError:
         raise StructError('Invalid bytes to create transaction subclass.')

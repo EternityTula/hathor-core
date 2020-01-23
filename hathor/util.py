@@ -213,3 +213,17 @@ class classproperty:
 
     def __get__(self, obj, owner):
         return self.f(owner)
+
+
+def json_loadb(raw: bytes) -> object:
+    """Compact loading raw as UTF-8 encoded bytes to a Python object."""
+    import json
+    # XXX: from Python3.6 onwards, json.loads can take bytes
+    #      See: https://docs.python.org/3/library/json.html#json.loads
+    return json.loads(raw)
+
+
+def json_dumpb(obj: object) -> bytes:
+    """Compact formating obj as JSON to UTF-8 encoded bytes."""
+    import json
+    return json.dumps(obj, separators=(',', ':')).encode('utf-8')
