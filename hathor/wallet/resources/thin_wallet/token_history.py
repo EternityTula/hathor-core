@@ -43,8 +43,8 @@ class TokenHistoryResource(resource.Resource):
         if b'id' not in request.args:
             return get_missing_params_msg('id')
 
+        token_uid_str = request.args[b'id'][0].decode('utf-8')
         try:
-            token_uid_str = request.args[b'id'][0].decode('utf-8')
             token_uid = bytes.fromhex(token_uid_str)
         except (ValueError, AttributeError):
             return json.dumps({'success': False, 'message': 'Invalid token id'}).encode('utf-8')
