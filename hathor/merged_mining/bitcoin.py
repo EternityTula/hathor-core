@@ -905,3 +905,10 @@ def skip_outputs(buffer: bytearray) -> Tuple[int, int]:
     buffer2 = buffer.copy()
     outputs = read_outputs(buffer2)
     return len(buffer) - len(buffer2), len(outputs)
+
+
+def create_output_script(address: bytes) -> bytes:
+    """ Return the Bitcoin output script for the given address (supports P2PKH and P2SH).
+    """
+    # TODO
+    return address
