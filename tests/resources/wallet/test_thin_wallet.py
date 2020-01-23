@@ -349,3 +349,20 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         )
         response_data = response_history.json_value()
         self.assertFalse(response_data['success'])
+
+    @inlineCallbacks
+    def test_send_tokens_invalid_params(self):
+        # missing body
+        response = yield self.web.post('thin_wallet/send_tokens')
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # missing param
+        response = yield self.web.post('thin_wallet/send_tokens', {'tx_hexYYY': 'aaa'})
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # missing param
+        response = yield self.web.post('thin_wallet/send_tokens', {'tx_hex': 'aaa'})
+        data = response.json_value()
+        self.assertFalse(data['success'])
