@@ -366,3 +366,71 @@ class SendTokensTest(_BaseResourceTest._ResourceTest):
         response = yield self.web.post('thin_wallet/send_tokens', {'tx_hex': 'aaa'})
         data = response.json_value()
         self.assertFalse(data['success'])
+
+    @inlineCallbacks
+    def test_token_history_invalid_params(self):
+        resource = StubSite(TokenHistoryResource(self.manager))
+
+        # invalid count
+        response = yield resource.get('thin_wallet/token_history', {
+            b'id': b'000003a3b261e142d3dfd84970d3a50a93b5bc3a66a3b6ba973956148a3eb824',
+            b'count': 'a'
+        })
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # missing token uid
+        response = yield resource.get('thin_wallet/token_history', {
+            b'count': 3
+        })
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # invalid token uid
+        response = yield resource.get('thin_wallet/token_history', {
+            b'id': b'000',
+            b'count': 3
+        })
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # missing timestamp
+        response = yield resource.get('thin_wallet/token_history', {
+            b'id': b'000003a3b261e142d3dfd84970d3a50a93b5bc3a66a3b6ba973956148a3eb824',
+            b'count': 3,
+            b'hash': b'0000b1448893eb7efdd3c71b97b74d934a4ecaaf8a6b52f6cb5b60fdaf21497b',
+        })
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # invalid timestamp
+        response = yield resource.get('thin_wallet/token_history', {
+            b'id': b'000003a3b261e142d3dfd84970d3a50a93b5bc3a66a3b6ba973956148a3eb824',
+            b'count': 3,
+            b'hash': b'0000b1448893eb7efdd3c71b97b74d934a4ecaaf8a6b52f6cb5b60fdaf21497b',
+            b'timestamp': 'a'
+        })
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # invalid hash
+        response = yield resource.get('thin_wallet/token_history', {
+            b'id': b'000003a3b261e142d3dfd84970d3a50a93b5bc3a66a3b6ba973956148a3eb824',
+            b'count': 3,
+            b'timestamp': 1578118186,
+            b'page': b'next',
+            b'hash': b'000',
+        })
+        data = response.json_value()
+        self.assertFalse(data['success'])
+
+        # invalid page
+        response = yield resource.get('thin_wallet/token_history', {
+            b'id': b'000003a3b261e142d3dfd84970d3a50a93b5bc3a66a3b6ba973956148a3eb824',
+            b'count': 3,
+            b'timestamp': 1578118186,
+            b'page': b'nextYY',
+            b'hash': b'0000b1448893eb7efdd3c71b97b74d934a4ecaaf8a6b52f6cb5b60fdaf21497b',
+        })
+        data = response.json_value()
+        self.assertFalse(data['success'])
