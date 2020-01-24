@@ -1,5 +1,4 @@
 import json
-import re
 import struct
 
 from twisted.web import resource

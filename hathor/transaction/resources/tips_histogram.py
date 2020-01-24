@@ -36,14 +36,20 @@ class TipsHistogramResource(resource.Resource):
         except KeyError:
             return json.dumps({'success': False, 'message': 'Missing parameter: begin'}).encode('utf-8')
         except ValueError:
-            return json.dumps({'success': False, 'message': 'Invalid parameter, cannot convert to int: begin'}).encode('utf-8')
+            return json.dumps({
+                'success': False,
+                'message': 'Invalid parameter, cannot convert to int: begin'
+            }).encode('utf-8')
 
         try:
             end = int(request.args[b'end'][0])
         except KeyError:
             return json.dumps({'success': False, 'message': 'Missing parameter: end'}).encode('utf-8')
         except ValueError:
-            return json.dumps({'success': False, 'message': 'Invalid parameter, cannot convert to int: end'}).encode('utf-8')
+            return json.dumps({
+                'success': False,
+                'message': 'Invalid parameter, cannot convert to int: end'
+            }).encode('utf-8')
 
         v = []
         for timestamp in range(begin, end + 1):

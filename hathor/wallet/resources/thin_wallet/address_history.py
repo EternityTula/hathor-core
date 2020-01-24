@@ -39,7 +39,7 @@ class AddressHistoryResource(resource.Resource):
             request.setResponseCode(503)
             return json.dumps({'success': False}, indent=4).encode('utf-8')
 
-        if not b'addresses[]' in request.args:
+        if b'addresses[]' not in request.args:
             return json.dumps({'success': False, 'message': 'Missing parameter \'addresses[]\''}).encode('utf-8')
         addresses = request.args[b'addresses[]']
 

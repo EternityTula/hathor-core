@@ -5,7 +5,6 @@ import struct
 
 from twisted.web import resource
 
-from hathor.api_util import get_missing_params_msg
 from hathor.cli.openapi_files.register import register_resource
 from hathor.crypto.util import decode_address
 from hathor.transaction import Block
@@ -36,7 +35,7 @@ class MiningResource(resource.Resource):
             block_bytes_str = post_data['block_bytes']
             block_bytes = base64.b64decode(block_bytes_str)
             block = Block.create_from_struct(block_bytes, storage=self.manager.tx_storage)
-        except (AttributeError, KeyError, ValueError, json.JSONDecodeError, binascii.Error, struct.error) as e:
+        except (AttributeError, KeyError, ValueError, json.JSONDecodeError, binascii.Error, struct.error):
             # XXX ideally, we should catch each error separately and send an specific error
             # message, but we only return 0 or 1 on the API
             # AttributeError, json.JSONDecodeError: empty data or error decoding json

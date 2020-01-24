@@ -27,11 +27,14 @@ class AddPeersResource(resource.Resource):
 
         try:
             peers = json.loads(request.content.read().decode('utf-8'))
-        except (json.JSONDecodeError, AttributeError) as e:
+        except (json.JSONDecodeError, AttributeError):
             return json.dumps({'success': False, 'message': 'Invalid format for post data'}).encode('utf-8')
 
         if not isinstance(peers, list):
-            return json.dumps({'success': False, 'message': 'Invalid format for post data. Expected a list'}).encode('utf-8')
+            return json.dumps({
+                'success': False,
+                'message': 'Invalid format for post data. Expected a list'
+            }).encode('utf-8')
 
         known_peers = self.manager.connections.peer_storage.values()
 

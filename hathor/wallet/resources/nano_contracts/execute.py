@@ -2,7 +2,6 @@ import base64
 import binascii
 import json
 
-import base58
 from twisted.web import resource
 
 from hathor.api_util import get_missing_params_msg, render_options, set_cors
@@ -89,27 +88,27 @@ class NanoContractExecuteResource(resource.Resource):
         try:
             spent_tx_id = bytes.fromhex(data['spent_tx_id'])
         except ValueError:
-            raise ValueError('Invalid \'spent_tx_id\' parameter');
+            raise ValueError('Invalid \'spent_tx_id\' parameter')
 
         try:
             oracle_data = base64.b64decode(data['oracle_data'])
         except binascii.Error:
-            raise ValueError('Invalid \'oracle_data\' parameter');
+            raise ValueError('Invalid \'oracle_data\' parameter')
 
         try:
             oracle_signature = base64.b64decode(data['oracle_signature'])
         except binascii.Error:
-            raise ValueError('Invalid \'oracle_signature\' parameter');
+            raise ValueError('Invalid \'oracle_signature\' parameter')
 
         try:
             oracle_pubkey = base64.b64decode(data['oracle_pubkey'])
         except binascii.Error:
-            raise ValueError('Invalid \'oracle_pubkey\' parameter');
+            raise ValueError('Invalid \'oracle_pubkey\' parameter')
 
         try:
             address = decode_address(data['address'])
         except InvalidAddress:
-            raise ValueError('Invalid \'address\' parameter');
+            raise ValueError('Invalid \'address\' parameter')
 
         return {
             'spent_tx_id': spent_tx_id,

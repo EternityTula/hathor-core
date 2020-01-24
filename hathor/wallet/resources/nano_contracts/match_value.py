@@ -1,6 +1,7 @@
 import base64
 import binascii
 import json
+import struct
 
 import base58
 from twisted.web import resource
@@ -112,7 +113,7 @@ class NanoContractMatchValueResource(resource.Resource):
         try:
             oracle_pubkey_hash = base64.b64decode(data['oracle_pubkey_hash'])
         except binascii.Error:
-            raise ValueError('Invalid \'oracle_pubkey_hash\' in parameters');
+            raise ValueError('Invalid \'oracle_pubkey_hash\' in parameters')
 
         try:
             total_value = int(data['total_value'])

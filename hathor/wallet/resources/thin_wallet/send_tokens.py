@@ -71,7 +71,7 @@ class SendTokensResource(resource.Resource):
 
         try:
             tx = tx_or_block_from_bytes(bytes.fromhex(tx_hex))
-        except (ValueError, struct.error) as e:
+        except (ValueError, struct.error):
             # ValueError: invalid hex
             # struct.error: invalid transaction data
             return self.return_POST(False, 'Error parsing hexdump to create the transaction')

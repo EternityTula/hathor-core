@@ -40,14 +40,20 @@ class DashboardTransactionResource(resource.Resource):
         except KeyError:
             return json.dumps({'success': False, 'message': 'Missing parameter: block'}).encode('utf-8')
         except ValueError:
-            return json.dumps({'success': False, 'message': 'Invalid parameter, cannot convert to int: block'}).encode('utf-8')
+            return json.dumps({
+                'success': False,
+                'message': 'Invalid parameter, cannot convert to int: block'
+            }).encode('utf-8')
 
         try:
             tx_count = int(request.args[b'tx'][0])
         except KeyError:
             return json.dumps({'success': False, 'message': 'Missing parameter: tx'}).encode('utf-8')
         except ValueError:
-            return json.dumps({'success': False, 'message': 'Invalid parameter, cannot convert to int: tx'}).encode('utf-8')
+            return json.dumps({
+                'success': False,
+                'message': 'Invalid parameter, cannot convert to int: tx'
+            }).encode('utf-8')
 
         # Restrict counts
         block_count = min(block_count, settings.MAX_DASHBOARD_COUNT)
