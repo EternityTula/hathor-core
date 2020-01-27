@@ -31,17 +31,14 @@ class PushTxResource(resource.Resource):
         request.setHeader(b'content-type', b'application/json; charset=utf-8')
         set_cors(request, 'GET')
 
-        requested_decode = request.args[b'hex_tx'][0].decode('utf-8')
-
         try:
+            requested_decode = request.args[b'hex_tx'][0].decode('utf-8')
             tx_bytes = bytes.fromhex(requested_decode)
             tx = tx_or_block_from_bytes(tx_bytes)
+        except KeyError:
+            data = {'success': False, 'message': 'Missing hexadecimal data', 'can_force': False}
         except ValueError:
-            data = {
-                'success': False,
-                'message': 'Invalid hexadecimal data',
-                'can_force': False
-            }
+            data = {'success': False, 'message': 'Invalid hexadecimal data', 'can_force': False}
         except struct.error:
             data = {
                 'success': False,
