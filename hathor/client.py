@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 import requests
 
+from hathor.crypto.util import decode_address
 from hathor.transaction import Block
 
 # TODO: make this client async with twisted, instead of using `requests`
@@ -69,3 +70,23 @@ class HathorClient(IHathorClient):
             'hexdata': bytes(block).hex(),
         }
         return requests.post(self._get_url('submit_block'), json=data).json()['result']
+
+
+class HathorClientStub(IHathorClient):
+    def __init__(self, manager):
+        self.manager = manager
+
+    def version(self) -> Tuple[int, int, int]:
+        from hathor.version import __version__
+        major, minor, patch = __version__.split('.')
+        return (int(major), int(minor), int(patch))
+
+    def status(self) -> Dict[str, Any]:
+        return {}
+
+    def get_block_template(self, address: Optional[str] = None, merged_mining: bool = False) -> Block:
+        baddress = address and decode_address(address)
+        return self.manager.generate_mining_block(address=baddress, merge_mined=merged_mining)
+
+    def submit_block(self, block: Block) -> bool:
+        return self.manager.propagate_tx(block)
