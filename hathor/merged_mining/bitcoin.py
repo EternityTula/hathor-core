@@ -909,6 +909,36 @@ def skip_outputs(buffer: bytearray) -> Tuple[int, int]:
 
 def create_output_script(address: bytes) -> bytes:
     """ Return the Bitcoin output script for the given address (supports P2PKH and P2SH).
+
+    Examples:
+
+    >>> from hathor.crypto.util import decode_address
+    >>> create_output_script(decode_address('1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2')).hex()
+    '76a977bff20c60e522dfaa3350c39b030a5d004e839a88ac'
+    >>> create_output_script(decode_address('3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy')).hex()
+    'a9b472a266d0bd89c13706a4132ccfb16f7c3b9fcb87'
     """
-    # TODO
-    return address
+    assert len(address) == 25
+    # OPCODES: https://en.bitcoin.it/wiki/Script#Opcodes
+    if address[0] == 0x00:  # Base58 address starts with 1..
+        # Pay To Public Key Hash (P2PKH): OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+        # See: https://bitcoin.org/en/transactions-guide#pay-to-public-key-hash-p2pkh
+        pub_key_hash = address[1:21]
+        script = bytearray()
+        script.append(0x76)  # OP_DUP
+        script.append(0xa9)  # OP_HASH160
+        script.extend(pub_key_hash)
+        script.append(0x88)  # OP_EQUALVERIFY
+        script.append(0xac)  # OP_CHECKSIG
+        return bytes(script)
+    elif address[0] == 0x05:  # Base58 address starts with 3..
+        # Pay To Script Hash (P2SH): OP_HASH160 <Hash160(redeemScript)> OP_EQUAL
+        # See: https://bitcoin.org/en/transactions-guide#pay-to-script-hash-p2sh
+        redeem_script_hash = address[1:21]
+        script = bytearray()
+        script.append(0xa9)  # OP_HASH160
+        script.extend(redeem_script_hash)
+        script.append(0x87)  # OP_EQUAL
+        return bytes(script)
+    else:
+        raise ValueError('invalid address, or address type not supported')
